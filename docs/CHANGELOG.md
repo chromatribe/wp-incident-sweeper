@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## [2.20261015.8] - 2026-10-15
+
+### Added & Compliant
+- **国際化・地域化 (i18n / l10n) の完全実装:**
+  - WordPress標準 gettext 準拠テキストドメイン `wp-incident-sweeper` および `languages/` 配備。
+  - POT テンプレート、日本語 PO、コンパイル済みバイナリ MO を同梱。
+  - JavaScript 側への `wpisConfig.i18n` 辞書注入と `__()` / `sprintf()` ヘルパーによる完全な多言語対応。
+- **法令遵守（コンプライアンス）& プライバシー対応の完全実装:**
+  - **電気通信事業法（2023年6月施行 改正外部送信規律）対応:** GitHub（`raw.githubusercontent.com`）へのシグネチャ取得通信における送信情報（IP、User-Agent）、非送信情報（サイト内コンテンツ・個人データ完全ローカル完結）をUI上で明示開示。
+  - **個人情報保護法 (APPI) & GDPR 対応:** `wp_add_privacy_policy_content` によるプライバシーポリシー提案文面の自動登録、および「マイKW (`wpis_my_keywords`)」に対する個人データ開示（`wp_privacy_personal_data_exporters`）と消去（`wp_privacy_personal_data_erasers`）フックを実装。
+  - **不正アクセス禁止法遵守 & 利用許諾条項 (AUP):** 正当な管理権原または契約に基づく保守環境に限定する利用規約条項を策定。
+  - **免責事項 (Limitation of Liability):** AS-IS（無保証）提供および一括完全削除前の事前バックアップ義務を明文化。
+  - **新タブ新設:** 管理画面に第4のタブ「📜 法令・規約・プライバシー (Compliance & Privacy)」を追加し、常時閲覧可能に整備。
+- **総合テストスイート拡張:**
+  - `test_i18n_l10n_readiness` および `test_compliance_and_privacy` を追加。
+
 ## [2.20261015.7] - 2026-10-15
 
 ### Added & Improved
