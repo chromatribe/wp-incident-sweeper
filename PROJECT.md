@@ -1,16 +1,24 @@
 # WP Incident Sweeper — プロジェクト定義
 
-**Current Version:** `2.20261015.9`
+**Current Version:** `2.20261015.10`
 
 ## 1. 概要
 WordPressサイト内の全コンテンツ（公開・下書き・ゴミ箱・非公開）および登録ユーザーを瞬時に一括スキャンし、改ざん痕跡（`Hacked by...`、`wp2_*` 等）を自動判定・安全に一括駆除する緊急セキュリティ・巡回ツール。マルチサイト（サイトネットワーク管理）環境にも完全対応し、傘下の全子サイトを横断スキャン可能。
 
 ## 2. バージョン体系（Qlypx方式）
 - 正本: `PROJECT.md` の `**Current Version:**`
-- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.9`）
+- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.10`）
 - 同期検証: `python3 scripts/check_version_sync.py`
 
 ## 3. Change Log
+
+### 2.20261015.10
+- **多言語ローカライゼーション (l10n) の高需要言語カタログ展開 (`en_US`, `id_ID`, `es_ES`, `de_DE`):**
+  - 世界的な不正改ざん・カジノスパム被害の多発地域およびWordPress公式ディレクトリ審査に対応し、ニーズの高い4言語（英語・インドネシア語・スペイン語・ドイツ語）の翻訳カタログを整備。
+  - 特にインドネシア語 (`id_ID`) は、当プラグインが標準検知するオンラインカジノスパム（`slot gacor`, `judi online`, `togel` 等）および改ざんシグネチャ（`trenggalek`, `indoxploit` 等）の主要被害地域と直結。
+  - ドイツ語 (`de_DE`) は、厳格なデータ保護規則（GDPR / DSGVO / TTDSG）およびゼロ通信アーキテクチャの需要に応答。
+  - 各言語の `.po` およびコンパイル済みバイナリ `.mo` を `wp-incident-sweeper/languages/` に配備。
+  - `scripts/build_languages.py` および `scripts/test_sweeper.py`（`test_i18n_l10n_readiness`）を全5言語の自動生成・完全検証に対応。
 
 ### 2.20261015.9
 - **全アイコンの Lucide SVG 化（Dashicons からの完全脱却）:**

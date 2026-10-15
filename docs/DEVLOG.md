@@ -1,5 +1,22 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-15 | v2.20261015.10 高需要地域・言語向けローカライゼーション (l10n) の完全実装 (`en_US`, `id_ID`, `es_ES`, `de_DE`)
+- 🧠 思考:
+  1. インシデント対応ツールとして真に現場で役立つためには、改ざんやスパム被害が国際的に多発している地域、および厳格なセキュリティ・プライバシー規準を求める地域の母国語に対応する必要がある。
+  2. 特にインドネシア（`id_ID`）は、本プラグインが標準検知するカジノスパム（`slot gacor`, `judi online`, `togel` 等）および改ざん痕跡（`trenggalek`, `indoxploit` 等）の主要標的国であり、現地サイト管理者の緊急駆除需要が極めて高い。
+  3. 英語（`en_US`）は世界中のホスティング事業者・代理店・WordPress.org公式ディレクトリ展開における国際共通語。
+  4. スペイン語（`es_ES`）は世界第2位のWordPress利用人口を誇り、ラテンアメリカ等の不正アカウント大量作成被害に対応。
+  5. ドイツ語（`de_DE`）はEU圏で最もデータ保護（GDPR / DSGVO / TTDSG）への意識が高く、本ツールの「外部通信ゼロ・完全ローカル処理」が最も評価される市場。
+- 🔨 やった:
+  1. `scripts/build_languages.py` に `en_US`, `id_ID`, `es_ES`, `de_DE` の包括的翻訳辞書（全54文字列）を構築。
+  2. 各言語の `.po` ファイルおよび `msgfmt` によるバイナリ `.mo` ファイルを `wp-incident-sweeper/languages/` に自動生成・コンパイル。
+  3. `scripts/test_sweeper.py` の `test_i18n_l10n_readiness` を拡張し、全5言語（`ja`, `en_US`, `id_ID`, `es_ES`, `de_DE`）のファイル存在、サイズ、および GNU gettext マジックバイト（`\xde\x12\x04\x95` / `\x95\x04\x12\xde`）を完全検証。
+  4. Qlypx方式に基づき、全7ファイル（`PROJECT.md`, `wp-incident-sweeper.php`, `readme.txt`, `spec/SPEC.md`, `docs/CHANGELOG.md`, `README.md`, `version.json`）を `2.20261015.10` に同期。
+- ❌ 失敗: なし。
+- ✅ 成功: `python3 scripts/build_languages.py`、`python3 scripts/check_version_sync.py`、`python3 scripts/test_sweeper.py` 全15テスト完全合格。
+- 🧭 決定: 脅威シグネチャと密接に連動するインドネシア語をはじめ、WordPressの主要言語圏を標準カタログとして同梱することで、グローバル展開およびディレクトリ登録要件を満たす。
+- 🔗 参照: `wp-incident-sweeper/languages/` / `scripts/build_languages.py` / `spec/SPEC.md`
+
 ## 2026-10-15 | v2.20261015.9 全アイコンの Lucide SVG 化（Dashicons からの完全脱却）
 - 🧠 思考:
   1. WordPress標準のDashiconsは種類が限定的でデザインが古く、解像度やサイズ調整の柔軟性に欠ける。

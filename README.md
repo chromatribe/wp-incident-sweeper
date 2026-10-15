@@ -3,7 +3,7 @@
 > **Emergency incident response, mass defacement auditing, and safe one-click cleanup plugin for WordPress (Single & Multisite).**  
 > WordPress サイト内の全投稿・固定ページ・ユーザーを一括スキャンし、改ざん痕跡・不正侵入を安全に特定・駆除する緊急セキュリティ監査ツール。
 
-**Version:** `2.20261015.9`  
+**Version:** `2.20261015.10`  
 📥 **[Download Latest Plugin (`wp-incident-sweeper.zip`)](https://github.com/chromatribe/wp-incident-sweeper/raw/main/wp-incident-sweeper.zip)**
 
 ---
@@ -51,8 +51,9 @@
 
 9. **Internationalization & Localization (i18n / l10n) / 国際化・地域化**
    - Built to WordPress gettext standards with complete `.pot`, `.po`, and binary `.mo` catalogs.
+   - Standard out-of-the-box support for high-demand incident response regions: **English (`en_US`)**, **Japanese (`ja`)**, **Indonesian (`id_ID`)**, **Spanish (`es_ES`)**, and **German (`de_DE`)**.
    - Fully localized client UI (dialogs, toolbars, badges).
-   - *（WordPress公式標準の gettext 多言語・地域化対応。UIメッセージを完全ローカライズ）*
+   - *（WordPress公式標準の gettext 多言語・地域化対応。インシデント多発地域や公式展開を見据えた5言語（英語・日本語・インドネシア語・スペイン語・ドイツ語）のカタログを標準同梱）*
 
 10. **Legal & Compliance Readiness / 各種法令・コンプライアンス準拠**
     - **Telecommunications Business Act (External Transmission):** Transparent disclosure of GitHub connection destination, transmitted headers, and 100% local database scanning.
