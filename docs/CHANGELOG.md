@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [2.20261015.9] - 2026-10-15
+
+### Added & Improved
+- **全アイコンの Lucide SVG 化（Dashicons からの完全脱却）:**
+  - WordPress 古典 Dashicons を全廃し、モダンで美しい Lucide SVG アイコン（`ShieldCheck`, `FileText`, `Users`, `BookOpen`, `Scale`, `Download`, `RotateCw`, `Target`, `CloudDownload`, `X`）へ完全刷新。
+  - 管理メニューアイコンにも Lucide Shield SVG の Data URI を適用。
+  - 外部CDN不要・フォント読み込みチラつきゼロのインラインSVG方式で描画。
+  - 総合テストスイートに `test_lucide_icons` を追加。
+
 ## [2.20261015.8] - 2026-10-15
 
 ### Added & Compliant
