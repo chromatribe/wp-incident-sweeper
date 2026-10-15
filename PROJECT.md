@@ -1,16 +1,23 @@
 # WP Incident Sweeper — プロジェクト定義
 
-**Current Version:** `2.20261015.8`
+**Current Version:** `2.20261015.9`
 
 ## 1. 概要
 WordPressサイト内の全コンテンツ（公開・下書き・ゴミ箱・非公開）および登録ユーザーを瞬時に一括スキャンし、改ざん痕跡（`Hacked by...`、`wp2_*` 等）を自動判定・安全に一括駆除する緊急セキュリティ・巡回ツール。マルチサイト（サイトネットワーク管理）環境にも完全対応し、傘下の全子サイトを横断スキャン可能。
 
 ## 2. バージョン体系（Qlypx方式）
 - 正本: `PROJECT.md` の `**Current Version:**`
-- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.8`）
+- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.9`）
 - 同期検証: `python3 scripts/check_version_sync.py`
 
 ## 3. Change Log
+
+### 2.20261015.9
+- **全アイコンの Lucide SVG 化（Dashicons からの完全脱却）:**
+  - WordPress 古典 Dashicons を全廃し、モダンで軽量な Lucide SVG アイコン（`ShieldCheck`, `FileText`, `Users`, `BookOpen`, `Scale`, `Download`, `RotateCw`, `Target`, `CloudDownload`, `X`）へ完全刷新。
+  - 管理メニューアイコンにも Lucide Shield SVG の Data URI を適用。
+  - 外部CDN不要・フォント読み込みチラつきゼロのインラインSVG方式で描画。
+  - 総合テストスイートに `test_lucide_icons` を追加。
 
 ### 2.20261015.8
 - **国際化・地域化 (i18n / l10n) の完全実装:**

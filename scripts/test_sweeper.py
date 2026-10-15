@@ -295,6 +295,23 @@ def test_compliance_and_privacy(php_text: str):
     print("  [PASS] Legal compliance (Telecommunications Act, APPI/GDPR, AUP, AS-IS) verified")
 
 
+def test_lucide_icons(php_text: str):
+    """Dashicons から Lucide SVG アイコンへの完全移行を検証"""
+    css_file = ROOT / "wp-incident-sweeper" / "assets/css/admin.css"
+    css_text = css_file.read_text(encoding="utf-8")
+
+    # CSS に .wpis-lucide スタイル定義が存在すること
+    assert ".wpis-lucide" in css_text, "admin.css must define .wpis-lucide styles"
+
+    # UI 内部に dashicons クラスが残存していないこと（すべて Lucide SVG へ移行済み）
+    assert '<span class="dashicons' not in php_text, "All in-app UI dashicon spans must be replaced with Lucide SVGs"
+
+    # Lucide SVG アイコン（Shield, Target, CloudDownload, Download, RefreshCw, FileText, Users, BookOpen, Scale, X）
+    assert "wpis-icon-shield" in php_text or 'class="wpis-lucide' in php_text
+    assert "LUCIDE_SHIELD_MENU_ICON" in php_text, "Menu icon must use Lucide Shield SVG data URI"
+    print("  [PASS] Lucide SVG iconography verified (Zero Dashicons in app UI)")
+
+
 def main():
     print("Running WP Incident Sweeper Test Suite...")
     php_text = PHP_FILE.read_text(encoding="utf-8")
@@ -309,6 +326,7 @@ def main():
     test_js_execution()
     test_i18n_l10n_readiness(php_text, js_text)
     test_compliance_and_privacy(php_text)
+    test_lucide_icons(php_text)
 
     print("\nALL TESTS PASSED! Plugin is strictly verified.")
     return 0

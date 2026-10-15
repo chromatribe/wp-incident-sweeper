@@ -1,5 +1,29 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-15 | v2.20261015.9 全アイコンの Lucide SVG 化（Dashicons からの完全脱却）
+- 🧠 思考:
+  1. WordPress標準のDashiconsは種類が限定的でデザインが古く、解像度やサイズ調整の柔軟性に欠ける。
+  2. モダンなLucide SVGアイコンを直接インライン埋め込みすることで、外部CDNへの通信（ゼロ通信・完全スタンドアロン）を維持しつつ、フォント読み込み遅延やチラつき（FOIT/FOUT）のない極めて洗練されたUIを実現する。
+- 🔨 やった:
+  1. `assets/css/admin.css` に `.wpis-lucide` スタイルクラスを定義（stroke-width 2, currentColor, round linecap/linejoin）。
+  2. `wp-incident-sweeper.php` 内のすべての Dashicon span を Lucide SVG に換装:
+     - メインタイトル: Lucide `ShieldCheck`
+     - 管理画面メニュー: Lucide `ShieldCheck` SVG の Data URI（WordPress管理サイドバーにもLucideを適用）
+     - マイKWボタン: Lucide `Target`
+     - KW同期ボタン: Lucide `CloudDownload`
+     - CSV出力ボタン: Lucide `Download`
+     - スキャン実行ボタン: Lucide `RotateCw`
+     - タブアイコン: 投稿・固定ページ (`FileText`), ユーザー (`Users`), ガイド (`BookOpen`), 法令・規約 (`Scale`)
+     - 法令パネル見出し: Lucide `ShieldAlert`
+     - マイKWモーダル閉じるボタン: Lucide `X`
+  3. `admin.js` 内のボタン状態切り替え（ローディング中・通常時）でも Lucide アイコンが消失しないよう `btnScan.innerHTML` に SVG を統合。
+  4. `test_sweeper.py` に `test_lucide_icons` テストを追加し、UI内に `dashicons` の残存がないことを自動検証。
+  5. Qlypx方式で全7箇所を `2.20261015.9` に同期。
+- ❌ 失敗: なし。
+- ✅ 成功: `test_sweeper.py` 全13項目PASS、`check_version_sync.py` PASS。
+- 🧭 決定: アイコンはすべてインライン Lucide SVG に統一し、外部アセット読み込みゼロ・CSS `currentColor` 連動による洗練されたデザインを確立。
+- 🔗 参照: `wp-incident-sweeper/wp-incident-sweeper.php` / `wp-incident-sweeper/assets/css/admin.css`
+
 ## 2026-10-15 | v2.20261015.8 国際化 (i18n/l10n) および法令遵守（外部送信規律・APPI・GDPR・規約）の完全実装
 - 🧠 思考:
   1. 多言語環境およびWordPress標準エコシステムに対応するため、完全な gettext 国際化（POT/PO/MO）およびクライアントJavaScriptローカライズ（`wpisConfig.i18n`）を実装する。

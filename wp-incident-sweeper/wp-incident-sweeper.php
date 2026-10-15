@@ -3,7 +3,7 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。単一サイトおよびマルチサイト（サイトネットワーク管理）の両方に完全対応し、コンテキストに応じてUIが自動最適化されます。
- * Version: 2.20261015.8
+ * Version: 2.20261015.9
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -288,7 +288,7 @@ class WP_Incident_Sweeper {
         $response = wp_remote_get( self::REMOTE_SIGNATURES_URL, array(
             'timeout'    => 10,
             'sslverify'  => true,
-            'user-agent' => 'WP-Incident-Sweeper/' . '2.20261015.8',
+            'user-agent' => 'WP-Incident-Sweeper/' . '2.20261015.9',
         ) );
 
         if ( is_wp_error( $response ) ) {
@@ -407,6 +407,8 @@ class WP_Incident_Sweeper {
         ) );
     }
 
+    const LUCIDE_SHIELD_MENU_ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIwIDEzYzAgNS0zLjUgNy41LTcuNjYgOC45NWExIDEgMCAwIDEtLjY3LS4wMUM3LjUgMjAuNSA0IDE4IDQgMTNWNmExIDEgMCAwIDEgMS0xYzIgMCA0LjUtMS4yIDYuMjQtMi43MmExLjE3IDEuMTcgMCAwIDEgMS41MiAwQzE0LjUxIDMuODEgMTcgNSAxOSA1YTEgMSAwIDAgMSAxIDF6Ii8+PHBhdGggZD0ibTkgMTIgMiAyIDQtNCIvPjwvc3ZnPg==';
+
     public function register_admin_menu() {
         add_menu_page(
             __( 'インシデント巡回スイーパー', 'wp-incident-sweeper' ),
@@ -414,7 +416,7 @@ class WP_Incident_Sweeper {
             'manage_options',
             'wp-incident-sweeper',
             array( $this, 'render_admin_page' ),
-            'dashicons-shield',
+            self::LUCIDE_SHIELD_MENU_ICON,
             3
         );
     }
@@ -426,7 +428,7 @@ class WP_Incident_Sweeper {
             'manage_network',
             'wp-incident-sweeper',
             array( $this, 'render_admin_page' ),
-            'dashicons-shield',
+            self::LUCIDE_SHIELD_MENU_ICON,
             3
         );
     }
@@ -440,14 +442,14 @@ class WP_Incident_Sweeper {
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '2.20261015.8'
+            '2.20261015.9'
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '2.20261015.8',
+            '2.20261015.9',
             true
         );
 
@@ -1114,7 +1116,7 @@ class WP_Incident_Sweeper {
             <div class="wpis-header">
                 <div class="wpis-title-area">
                     <h1>
-                        <span class="dashicons dashicons-shield" style="font-size:24px;width:24px;height:24px;color:#0284c7;"></span>
+                        <svg class="wpis-lucide wpis-icon-shield" viewBox="0 0 24 24" width="24" height="24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
                         インシデント巡回スイーパー <?php echo $is_network ? '<span class="wpis-badge wpis-badge-danger" style="font-size:12px;margin-left:8px;">全傘下サイト横断モード</span>' : ''; ?>
                     </h1>
                     <p>
@@ -1147,19 +1149,19 @@ class WP_Incident_Sweeper {
                 </div>
                 <div class="wpis-actions">
                     <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-my-kw" title="あなたが個別に検知したいキーワードを設定・管理します">
-                        <span class="dashicons dashicons-admin-generic" style="font-size:16px;width:16px;height:16px;"></span>
+                        <svg class="wpis-lucide" viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
                         マイKW設定 (<span id="wpis-my-kw-btn-count"><?php echo count( $my_kw ); ?></span>)
                     </button>
                     <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-sync-kw" title="GitHubから最新の検知キーワード定義を取得・更新します">
-                        <span class="dashicons dashicons-cloud" style="font-size:16px;width:16px;height:16px;"></span>
+                        <svg class="wpis-lucide" viewBox="0 0 24 24" width="15" height="15"><path d="M12 13v8"/><path d="m8 17 4 4 4-4"/><path d="M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284"/></svg>
                         最新KW更新 (GitHub)
                     </button>
                     <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-csv">
-                        <span class="dashicons dashicons-download" style="font-size:16px;width:16px;height:16px;"></span>
+                        <svg class="wpis-lucide" viewBox="0 0 24 24" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                         結果をCSV出力
                     </button>
                     <button type="button" class="wpis-btn wpis-btn-primary" id="wpis-btn-scan">
-                        <span class="dashicons dashicons-update" style="font-size:16px;width:16px;height:16px;"></span>
+                        <svg class="wpis-lucide" viewBox="0 0 24 24" width="15" height="15"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
                         <?php echo $is_network ? '全サイト横断スキャン実行' : '再スキャン実行'; ?>
                     </button>
                 </div>
@@ -1194,21 +1196,21 @@ class WP_Incident_Sweeper {
             <!-- Tabs -->
             <div class="wpis-tabs">
                 <button type="button" class="wpis-tab-btn is-active" data-tab="posts">
-                    <span class="dashicons dashicons-admin-post" style="font-size:18px;width:18px;height:18px;"></span>
+                    <svg class="wpis-lucide" viewBox="0 0 24 24" width="18" height="18"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
                     投稿・固定ページ監査
                     <span class="wpis-tab-count" id="wpis-badge-posts-threat">0</span>
                 </button>
                 <button type="button" class="wpis-tab-btn" data-tab="users">
-                    <span class="dashicons dashicons-admin-users" style="font-size:18px;width:18px;height:18px;"></span>
+                    <svg class="wpis-lucide" viewBox="0 0 24 24" width="18" height="18"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     ユーザー監査
                     <span class="wpis-tab-count" id="wpis-badge-users-threat">0</span>
                 </button>
                 <button type="button" class="wpis-tab-btn" data-tab="guide">
-                    <span class="dashicons dashicons-info" style="font-size:18px;width:18px;height:18px;"></span>
+                    <svg class="wpis-lucide" viewBox="0 0 24 24" width="18" height="18"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
                     <?php echo $is_network ? '巡回ガイド＆マルチサイト運用' : '巡回チェックガイド＆安全ガード仕様'; ?>
                 </button>
                 <button type="button" class="wpis-tab-btn" data-tab="compliance">
-                    <span class="dashicons dashicons-media-document" style="font-size:18px;width:18px;height:18px;"></span>
+                    <svg class="wpis-lucide" viewBox="0 0 24 24" width="18" height="18"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
                     <?php esc_html_e( '法令・規約・プライバシー', 'wp-incident-sweeper' ); ?>
                 </button>
             </div>
@@ -1343,7 +1345,7 @@ class WP_Incident_Sweeper {
                 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:24px;line-height:1.7;">
                     <div style="margin-bottom:24px;border-bottom:1px solid #e2e8f0;padding-bottom:14px;">
                         <h2 style="font-size:18px;margin:0 0 6px 0;color:#0f172a;display:flex;align-items:center;gap:8px;">
-                            <span class="dashicons dashicons-shield" style="color:#0284c7;font-size:22px;width:22px;height:22px;"></span>
+                            <svg class="wpis-lucide" viewBox="0 0 24 24" width="22" height="22" style="color:#0284c7;"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
                             <?php esc_html_e( '法令遵守（コンプライアンス）・プライバシー・利用規約', 'wp-incident-sweeper' ); ?>
                         </h2>
                         <p style="font-size:13px;color:#64748b;margin:0;">
@@ -1423,7 +1425,7 @@ class WP_Incident_Sweeper {
                         <h3 style="margin:0;font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;color:#0f172a;">
                             <span>🎯</span> マイKW設定（個別検知キーワード）
                         </h3>
-                        <button type="button" id="wpis-btn-close-my-kw" style="background:none;border:none;font-size:24px;color:#94a3b8;cursor:pointer;line-height:1;">&times;</button>
+                        <button type="button" id="wpis-btn-close-my-kw" style="background:none;border:none;color:#94a3b8;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;line-height:1;" title="閉じる"><svg class="wpis-lucide" viewBox="0 0 24 24" width="20" height="20"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
                     </div>
                     <p style="font-size:13px;color:#475569;margin-bottom:12px;line-height:1.5;">
                         あなたが個別に監視・検知したいキーワードを登録できます。<br>

@@ -59,6 +59,38 @@
   color: var(--text-main);
 }
 
+/* Lucide SVG Icons */
+.wpis-lucide {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  vertical-align: -0.2em;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
+}
+
+.wpis-btn .wpis-lucide {
+  width: 15px;
+  height: 15px;
+  vertical-align: -0.15em;
+}
+
+.wpis-tab-btn .wpis-lucide {
+  width: 18px;
+  height: 18px;
+}
+
+.wpis-title-area h1 .wpis-lucide {
+  width: 24px;
+  height: 24px;
+  color: var(--primary);
+  vertical-align: -0.15em;
+}
+
 .wpis-title-area p {
   margin: 0;
   color: var(--text-muted);

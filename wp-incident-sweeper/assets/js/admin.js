@@ -123,12 +123,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const colSpan = isNetwork ? 9 : 8;
     if (isLoading) {
       btnScan.disabled = true;
-      btnScan.textContent = isNetwork ? __( 'scan_running_network', '全傘下サイトを巡回クロール中...' ) : __( 'scan_running', 'スキャン中...' );
+      btnScan.innerHTML = '<span class="wpis-spinner" style="display:inline-block;width:13px;height:13px;margin-right:6px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:wpis-spin 0.8s linear infinite;vertical-align:-0.15em;"></span> ' + escapeHtml(isNetwork ? __( 'scan_running_network', '全傘下サイトを巡回クロール中...' ) : __( 'scan_running', 'スキャン中...' ));
       postsBody.innerHTML = `<tr><td colspan="${colSpan}" class="wpis-loading-state"><div class="wpis-spinner"></div><div>${isNetwork ? __( 'scanning_network', '全傘下サイトの全コンテンツ・ユーザーを横断クロール中...' ) : __( 'scanning_content', 'サイト内を高速クロール中（全投稿・固定ページ・ユーザー）...' )}</div></td></tr>`;
       usersBody.innerHTML = `<tr><td colspan="7" class="wpis-loading-state"><div class="wpis-spinner"></div><div>${__( 'scanning_users', 'ユーザーをスキャン中...' )}</div></td></tr>`;
     } else {
       btnScan.disabled = false;
-      btnScan.textContent = isNetwork ? __( 'rescan_network', '全サイト横断スキャン実行' ) : __( 'rescan', '再スキャン実行' );
+      btnScan.innerHTML = '<svg class="wpis-lucide" viewBox="0 0 24 24" width="15" height="15"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> ' + escapeHtml(isNetwork ? __( 'rescan_network', '全サイト横断スキャン実行' ) : __( 'rescan', '再スキャン実行' ));
     }
   }
 
