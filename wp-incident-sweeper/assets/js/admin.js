@@ -1,6 +1,6 @@
 /**
  * WP Incident Sweeper — Admin Client Script
- * Zero-dependency, lightweight Vanilla JS with robust XSS defense
+ * Zero-dependency, lightweight Vanilla JS with robust safeguards
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -87,16 +87,14 @@ document.addEventListener('DOMContentLoaded', function () {
       btnScan.disabled = true;
       btnScan.textContent = 'スキャン中...';
       postsBody.innerHTML = `<tr><td colspan="8" class="wpis-loading-state"><div class="wpis-spinner"></div><div>サイト内を高速クロール中（全投稿・固定ページ・ユーザー）...</div></td></tr>`;
-      usersBody.innerHTML = `<tr><td colspan="7" class="wpis-loading-state"><div class="wpis-spinner"></div><div>ユーザーをスキャン中...</div></td></tr>`;
+      usersBody.innerHTML = `<tr><td colspan="8" class="wpis-loading-state"><div class="wpis-spinner"></div><div>ユーザーをスキャン中...</div></td></tr>`;
     } else {
       btnScan.disabled = false;
       btnScan.textContent = '再スキャン実行';
     }
   }
 
-  // Render Everything
   function renderAll() {
-    // Update Metrics
     metricTotalPosts.textContent = scanData.summary.totalPosts;
     metricThreatPosts.textContent = scanData.summary.threatPosts;
     metricTotalUsers.textContent = scanData.summary.totalUsers;
@@ -144,6 +142,10 @@ document.addEventListener('DOMContentLoaded', function () {
         severityBadge = '<span class="wpis-badge wpis-badge-muted">ℹ️ 下書き/ゴミ箱</span>';
       }
 
+      if (item.is_protected) {
+        severityBadge = '<span class="wpis-badge wpis-badge-muted" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">🔒 システム保護</span>';
+      }
+
       const statusMap = {
         publish: '<span class="wpis-badge wpis-badge-publish">公開</span>',
         draft: '<span class="wpis-badge wpis-badge-draft">下書き</span>',
@@ -160,9 +162,14 @@ document.addEventListener('DOMContentLoaded', function () {
       const safeId = parseInt(item.id, 10);
       const editUrl = `${adminUrl}post.php?post=${safeId}&action=edit`;
 
+      // システム保護ページはチェックボックスを無効化
+      const checkboxDisabled = item.is_protected ? 'disabled title="トップページ等のシステム重要ページのため保護されています"' : '';
+
       return `
         <tr class="${rowClass}" data-id="${safeId}">
-          <td style="text-align:center;"><input type="checkbox" class="wpis-post-check" value="${safeId}" data-severity="${escapeHtml(item.severity)}"></td>
+          <td style="text-align:center;">
+            <input type="checkbox" class="wpis-post-check" value="${safeId}" data-severity="${escapeHtml(item.severity)}" data-status="${escapeHtml(item.status)}" ${checkboxDisabled}>
+          </td>
           <td>${severityBadge}</td>
           <td>
             <strong><a href="${editUrl}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;">${escapeHtml(item.title || '(タイトルなし)')}</a></strong>
@@ -181,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function bindPostCheckEvents() {
-    const checks = postsBody.querySelectorAll('.wpis-post-check');
+    const checks = postsBody.querySelectorAll('.wpis-post-check:not([disabled])');
     checks.forEach(c => {
       c.addEventListener('change', updatePostActionButtons);
     });
@@ -194,26 +201,28 @@ document.addEventListener('DOMContentLoaded', function () {
     btnDeleteSelected.disabled = count === 0;
     btnTrashSelected.disabled = count === 0;
     btnDeleteSelected.textContent = count > 0 ? `選択した${count}件を完全削除` : '選択した項目を完全削除';
-    btnTrashSelected.textContent = count > 0 ? `選択した${count}件をゴミ箱へ` : '選択した項目をゴミ箱へ';
+    btnTrashSelected.textContent = count > 0 ? `選択した${count}件をゴミ箱へ（安全）` : '選択した項目をゴミ箱へ（安全）';
   }
 
   postsFilter.addEventListener('change', renderPosts);
   postsSearch.addEventListener('input', renderPosts);
 
   postsCheckAll.addEventListener('change', () => {
-    const checks = postsBody.querySelectorAll('.wpis-post-check');
+    const checks = postsBody.querySelectorAll('.wpis-post-check:not([disabled])');
     checks.forEach(c => c.checked = postsCheckAll.checked);
     updatePostActionButtons();
   });
 
+  // 「危険項目を一括選択」: 保護ページや公開中正常記事は絶対に除外
   btnSelectThreats.addEventListener('click', () => {
-    const checks = postsBody.querySelectorAll('.wpis-post-check');
+    const checks = postsBody.querySelectorAll('.wpis-post-check:not([disabled])');
     checks.forEach(c => {
-      c.checked = (c.dataset.severity === 'high' || c.dataset.severity === 'medium');
+      c.checked = (c.dataset.severity === 'high');
     });
     updatePostActionButtons();
   });
 
+  // Execute Post Bulk Action
   async function executePostBulkAction(isPermanent) {
     const selected = Array.from(postsBody.querySelectorAll('.wpis-post-check:checked'))
       .map(c => parseInt(c.value, 10))
@@ -221,9 +230,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (selected.length === 0) return;
 
-    const actionText = isPermanent ? '完全に削除（復元不可）' : 'ゴミ箱へ移動';
-    if (!confirm(`選択された ${selected.length} 件の投稿・固定ページを【${actionText}】してもよろしいですか？`)) {
-      return;
+    if (isPermanent) {
+      const msg = `【慎重確認: 完全削除】\n` +
+                  `選択された ${selected.length} 件のコンテンツをDBから完全に消去します。\n` +
+                  `※ゴミ箱には入らず復元できません。\n` +
+                  `※公開中の正常記事は自動でゴミ箱へ退避され、巻き込み事故を防止します。\n\n` +
+                  `本当に実行してよろしいですか？`;
+      if (!confirm(msg)) return;
+    } else {
+      if (!confirm(`選択された ${selected.length} 件のコンテンツを「ゴミ箱」へ移動します。\n（後からいつでも復元可能です）\n\n実行しますか？`)) {
+        return;
+      }
     }
 
     try {
@@ -241,7 +258,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
-      alert(`${json.data.deleted_count} 件の処理が完了しました。`);
+      let resMsg = `${json.data.deleted_count} 件の処理が完了しました。`;
+      if (json.data.skipped_count > 0) {
+        resMsg += `\n（※保護対象のシステムページ等 ${json.data.skipped_count} 件は安全のため自動スキップされました）`;
+      }
+      alert(resMsg);
       runScan();
     } catch (err) {
       console.error(err);
@@ -255,7 +276,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Render Users Table
   function renderUsers() {
     if (scanData.users.length === 0) {
-      usersBody.innerHTML = `<tr><td colspan="7" class="wpis-empty-state">ユーザーはいません</td></tr>`;
+      usersBody.innerHTML = `<tr><td colspan="8" class="wpis-empty-state">ユーザーはいません</td></tr>`;
       return;
     }
 
@@ -268,14 +289,21 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       const safeId = parseInt(u.id, 10);
+      // ID 1 は絶対頭保護
+      const isDisabled = (safeId === 1) ? 'disabled title="初期マスター管理者のため保護されています"' : '';
 
       return `
         <tr class="${rowClass}" data-id="${safeId}">
-          <td style="text-align:center;"><input type="checkbox" class="wpis-user-check" value="${safeId}" data-threat="${u.is_threat}"></td>
+          <td style="text-align:center;">
+            <input type="checkbox" class="wpis-user-check" value="${safeId}" data-threat="${u.is_threat}" ${isDisabled}>
+          </td>
           <td>${badge}</td>
           <td><strong>${escapeHtml(u.login)}</strong> (ID: ${safeId})</td>
           <td>${escapeHtml(u.email)}</td>
           <td><span class="wpis-badge wpis-badge-muted">${escapeHtml(u.roles.join(', '))}</span></td>
+          <td>
+            <span style="font-size:12px;">公開: <strong>${u.published_posts}</strong> 件 / 下書き: <strong>${u.draft_posts}</strong> 件</span>
+          </td>
           <td>${escapeHtml(u.registered)}</td>
           <td>${u.threat_reasons.map(r => `<span class="wpis-reason-tag">${escapeHtml(r)}</span>`).join(' ') || '-'}</td>
         </tr>
@@ -286,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function bindUserCheckEvents() {
-    const checks = usersBody.querySelectorAll('.wpis-user-check');
+    const checks = usersBody.querySelectorAll('.wpis-user-check:not([disabled])');
     checks.forEach(c => c.addEventListener('change', updateUserActionButtons));
     updateUserActionButtons();
   }
@@ -294,16 +322,16 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateUserActionButtons() {
     const selected = usersBody.querySelectorAll('.wpis-user-check:checked');
     btnDeleteUsers.disabled = selected.length === 0;
-    btnDeleteUsers.textContent = selected.length > 0 ? `選択した${selected.length}名のユーザーを完全削除` : '選択したユーザーを完全削除';
+    btnDeleteUsers.textContent = selected.length > 0 ? `選択した${selected.length}名の不審ユーザーを削除` : '選択した不審ユーザーを削除';
   }
 
   usersCheckAll.addEventListener('change', () => {
-    const checks = usersBody.querySelectorAll('.wpis-user-check');
+    const checks = usersBody.querySelectorAll('.wpis-user-check:not([disabled])');
     checks.forEach(c => c.checked = usersCheckAll.checked);
     updateUserActionButtons();
   });
 
-  // Delete Users
+  // Delete Users with absolute safety
   btnDeleteUsers.addEventListener('click', async () => {
     const selected = Array.from(usersBody.querySelectorAll('.wpis-user-check:checked'))
       .map(c => parseInt(c.value, 10))
@@ -311,9 +339,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (selected.length === 0) return;
 
-    if (!confirm(`【警告】選択された ${selected.length} 名のユーザーを削除します。\n※該当ユーザーが作成した投稿・下書き等のコンテンツもすべて同時に完全削除されます。\n\n本当に実行しますか？`)) {
-      return;
-    }
+    const msg = `【安全確認: 不審ユーザーの削除】\n` +
+                `選択された ${selected.length} 名の不審ユーザーを削除します。\n\n` +
+                `🛡️ 巻き込み防止ガード:\n` +
+                `・不正な下書き・ゴミ箱記事のみが完全消去されます。\n` +
+                `・万が一公開中の正規記事が存在した場合は、あなたの管理アカウントに所有権が安全に引き継がれ、記事は消去されません。\n\n` +
+                `実行しますか？`;
+
+    if (!confirm(msg)) return;
 
     try {
       const formData = new FormData();
@@ -329,7 +362,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
-      alert(`${json.data.deleted_count} 名のユーザーをコンテンツとともに削除しました。`);
+      let resMsg = `${json.data.deleted_count} 名のユーザーの削除が完了しました。`;
+      if (json.data.skipped_count > 0) {
+        resMsg += `\n（※正規ユーザーや自身のアカウント ${json.data.skipped_count} 名は安全のため自動スキップされました）`;
+      }
+      alert(resMsg);
       runScan();
     } catch (err) {
       console.error(err);
@@ -344,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    let csv = '\uFEFF'; // UTF-8 BOM
+    let csv = '\uFEFF';
     csv += 'タイプ,ID,タイトル/ログイン名,ステータス/ロール,作成者/メール,作成・登録日,判定,検知理由\n';
 
     scanData.posts.forEach(p => {
@@ -379,7 +416,6 @@ document.addEventListener('DOMContentLoaded', function () {
       .replace(/'/g, '&#039;');
   }
 
-  // Scan on mount
   btnScan.addEventListener('click', runScan);
   runScan();
 });

@@ -3,7 +3,7 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。改ざん痕跡（Hacked by...、wp2_*、不審な登録日のアカウント等）を自動検出し、選択したアイテムを一括完全削除できる緊急セキュリティ・巡回ツール。
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -139,14 +139,14 @@ class WP_Incident_Sweeper {
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '1.1.0'
+            '1.2.0'
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '1.1.0',
+            '1.2.0',
             true
         );
 
@@ -158,7 +158,23 @@ class WP_Incident_Sweeper {
     }
 
     /**
-     * Ajax: サイト全体のスキャン実行（高効率・メモリ保護クエリ）
+     * システム保護対象ページのIDリストを取得（誤削除絶対防止）
+     */
+    private function get_protected_post_ids() {
+        $protected = array();
+        $front_id   = (int) get_option( 'page_on_front' );
+        $posts_id   = (int) get_option( 'page_for_posts' );
+        $privacy_id = (int) get_option( 'wp_page_for_privacy_policy' );
+
+        if ( $front_id > 0 )   $protected[] = $front_id;
+        if ( $posts_id > 0 )   $protected[] = $posts_id;
+        if ( $privacy_id > 0 ) $protected[] = $privacy_id;
+
+        return array_unique( $protected );
+    }
+
+    /**
+     * Ajax: サイト全体のスキャン実行（高効率・省メモリクエリ）
      */
     public function ajax_run_scan() {
         check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
@@ -167,11 +183,12 @@ class WP_Incident_Sweeper {
             wp_send_json_error( array( 'message' => '操作権限がありません（manage_optionsが必要です）。' ), 403 );
         }
 
-        // 大規模サイト用のメモリ保護
         @ini_set( 'memory_limit', '512M' );
         @set_time_limit( 120 );
 
         global $wpdb;
+
+        $protected_post_ids = $this->get_protected_post_ids();
 
         // 1. ユーザーのスキャン
         $users_data = array();
@@ -212,24 +229,34 @@ class WP_Incident_Sweeper {
                 $threat_user_ids[] = (int) $u->ID;
             }
 
+            // 該当ユーザーが作成した公開記事数と下書き数を事前集計（安全性確認）
+            $published_count = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(ID) FROM {$wpdb->posts} WHERE post_author = %d AND post_status = 'publish'",
+                $u->ID
+            ) );
+            $draft_count = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(ID) FROM {$wpdb->posts} WHERE post_author = %d AND post_status IN ('draft', 'pending', 'trash')",
+                $u->ID
+            ) );
+
             $users_data[] = array(
-                'id'             => (int) $u->ID,
-                'login'          => sanitize_text_field( $u->user_login ),
-                'name'           => sanitize_text_field( $u->display_name ),
-                'email'          => sanitize_email( $u->user_email ),
-                'roles'          => array_map( 'sanitize_key', (array) $u->roles ),
-                'registered'     => get_date_from_gmt( $u->user_registered, 'Y-m-d H:i:s' ),
-                'is_threat'      => $is_threat,
-                'threat_reasons' => $reasons,
+                'id'              => (int) $u->ID,
+                'login'           => sanitize_text_field( $u->user_login ),
+                'name'            => sanitize_text_field( $u->display_name ),
+                'email'           => sanitize_email( $u->user_email ),
+                'roles'           => array_map( 'sanitize_key', (array) $u->roles ),
+                'registered'      => get_date_from_gmt( $u->user_registered, 'Y-m-d H:i:s' ),
+                'is_threat'       => $is_threat,
+                'threat_reasons'  => $reasons,
+                'published_posts' => $published_count,
+                'draft_posts'     => $draft_count,
             );
         }
 
-        // 2. 投稿・固定ページ・全カスタム投稿タイプのスキャン（$wpdbで省メモリ・超高速化）
-        // 内部システム投稿タイプ（revision, attachment, nav_menu_item等）を除外
+        // 2. 投稿・固定ページ・全カスタム投稿タイプのスキャン
         $exclude_types = array( 'revision', 'attachment', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache', 'user_request', 'wp_block', 'wp_template', 'wp_template_part', 'wp_global_styles', 'wp_navigation' );
         $in_clause = "'" . implode( "','", array_map( 'esc_sql', $exclude_types ) ) . "'";
 
-        // 必要なカラムのみ抽出
         $sql = "
             SELECT p.ID, p.post_title, p.post_name, p.post_type, p.post_status, p.post_author, p.post_modified, p.post_content, u.display_name AS author_name
             FROM {$wpdb->posts} p
@@ -254,8 +281,14 @@ class WP_Incident_Sweeper {
                 $author_name = $row->author_name ? $row->author_name : 'ID:' . $author_id;
                 $mod_date    = $row->post_modified;
 
+                $is_protected = in_array( $post_id, $protected_post_ids, true );
+
                 $severity = 'clean';
                 $reasons  = array();
+
+                if ( $is_protected ) {
+                    $reasons[] = '🔒 システム重要ページ（トップ/ブログ/プライバシー）';
+                }
 
                 // 不審ユーザーが作成した記事
                 if ( in_array( $author_id, $threat_user_ids, true ) ) {
@@ -305,6 +338,7 @@ class WP_Incident_Sweeper {
                     'author_is_threat' => in_array( $author_id, $threat_user_ids, true ),
                     'modified_date'    => $mod_date,
                     'severity'         => $severity,
+                    'is_protected'     => $is_protected,
                     'reasons'          => $reasons,
                 );
             }
@@ -323,7 +357,7 @@ class WP_Incident_Sweeper {
     }
 
     /**
-     * Ajax: 選択した投稿の一括削除/ゴミ箱移動（安全ガード付き）
+     * Ajax: 選択した投稿の一括削除/ゴミ箱移動（安全ガード・巻き込み防止）
      */
     public function ajax_delete_posts() {
         check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
@@ -340,13 +374,53 @@ class WP_Incident_Sweeper {
             wp_send_json_error( array( 'message' => '削除対象が選択されていません。' ) );
         }
 
+        $protected_post_ids = $this->get_protected_post_ids();
+        $allowed_post_types = get_post_types( array( 'public' => true ), 'names' );
+        if ( ! in_array( 'post', $allowed_post_types, true ) ) $allowed_post_types[] = 'post';
+        if ( ! in_array( 'page', $allowed_post_types, true ) ) $allowed_post_types[] = 'page';
+
         $deleted_count = 0;
+        $skipped_count = 0;
+
         foreach ( $post_ids as $pid ) {
             $pid = absint( $pid );
             if ( $pid <= 0 ) continue;
 
+            // ガード1: システム保護ページ（フロントページ等）の強制スキップ
+            if ( in_array( $pid, $protected_post_ids, true ) ) {
+                $skipped_count++;
+                continue;
+            }
+
+            // ガード2: 投稿タイプの厳格検証（添付ファイルや内部データ等の巻き込み防止）
+            $post = get_post( $pid );
+            if ( ! $post || ! in_array( $post->post_type, $allowed_post_types, true ) ) {
+                $skipped_count++;
+                continue;
+            }
+
+            // ガード3: 公開中（publish）記事の誤完全削除ガード
+            // 公開中かつ改ざんキーワードが含まれていない記事は、完全削除を拒否しゴミ箱移動にフォールバック
+            if ( $force_delete && 'publish' === $post->post_status ) {
+                $check_text = mb_strtolower( $post->post_title . ' ' . $post->post_name . ' ' . $post->post_content, 'UTF-8' );
+                $is_confirmed_threat = false;
+                foreach ( $this->threat_keywords_high as $kw ) {
+                    if ( mb_strpos( $check_text, $kw ) !== false ) {
+                        $is_confirmed_threat = true;
+                        break;
+                    }
+                }
+                // 明確な改ざんシグネチャがない公開記事は完全削除させない（ゴミ箱へ退避）
+                if ( ! $is_confirmed_threat ) {
+                    $res = wp_trash_post( $pid );
+                    if ( $res ) $deleted_count++;
+                    continue;
+                }
+            }
+
+            // 実行
             if ( $force_delete ) {
-                $res = wp_delete_post( $pid, true ); // 完全削除（ゴミ箱を経由しない）
+                $res = wp_delete_post( $pid, true ); // 完全削除
             } else {
                 $res = wp_trash_post( $pid ); // ゴミ箱へ移動
             }
@@ -356,11 +430,14 @@ class WP_Incident_Sweeper {
             }
         }
 
-        wp_send_json_success( array( 'deleted_count' => $deleted_count ) );
+        wp_send_json_success( array(
+            'deleted_count' => $deleted_count,
+            'skipped_count' => $skipped_count,
+        ) );
     }
 
     /**
-     * Ajax: 選択したユーザーの一括削除（関連コンテンツも同時消去、自身誤爆防止）
+     * Ajax: 選択した不審ユーザーの一括削除（公開記事巻き込み防止・所有権安全移譲）
      */
     public function ajax_delete_users() {
         check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
@@ -370,6 +447,7 @@ class WP_Incident_Sweeper {
         }
 
         require_once ABSPATH . 'wp-admin/includes/user.php';
+        global $wpdb;
 
         $raw_ids = isset( $_POST['user_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['user_ids'] ) ) : '[]';
         $user_ids = json_decode( $raw_ids, true );
@@ -380,21 +458,72 @@ class WP_Incident_Sweeper {
 
         $current_user_id = get_current_user_id();
         $deleted_count = 0;
+        $skipped_count = 0;
+
+        $start_july = strtotime( '2026-07-17 00:00:00' );
+        $end_july   = strtotime( '2026-07-25 23:59:59' );
 
         foreach ( $user_ids as $uid ) {
             $uid = absint( $uid );
-            // ログイン中の管理者自身、およびID 1（初期マスター管理者）の誤削除を安全ガードで絶対防止
-            if ( $uid <= 0 || $uid === $current_user_id ) {
+
+            // ガード1: 自身（ログイン中）およびID: 1 の削除は物理的・論理的に絶対阻止
+            if ( $uid <= 0 || $uid === $current_user_id || $uid === 1 ) {
+                $skipped_count++;
                 continue;
             }
 
-            // 第2引数を null にすることで、該当ユーザーが作成した全コンテンツを完全削除
-            if ( wp_delete_user( $uid, null ) ) {
+            $user_obj = get_userdata( $uid );
+            if ( ! $user_obj ) {
+                continue;
+            }
+
+            // ガード2: 不審フラグを持たない正規ユーザーの誤爆削除を防止
+            $is_threat_user = false;
+            if ( strpos( $user_obj->user_login, 'wp2_' ) === 0 ) {
+                $is_threat_user = true;
+            }
+            $u_email = strtolower( $user_obj->user_email );
+            foreach ( $this->suspicious_email_domains as $bad_domain ) {
+                if ( strpos( $u_email, $bad_domain ) !== false ) {
+                    $is_threat_user = true;
+                    break;
+                }
+            }
+            $reg_time = strtotime( $user_obj->user_registered );
+            if ( $reg_time >= $start_july && $reg_time <= $end_july ) {
+                $is_threat_user = true;
+            }
+
+            // 不審判定されていない通常ユーザーが選択されていた場合は安全のためスキップ
+            if ( ! $is_threat_user ) {
+                $skipped_count++;
+                continue;
+            }
+
+            // ガード3: 公開中記事の巻き込み事故防止（超重要！）
+            // 該当ユーザーが作成した「下書き・ゴミ箱・保留（不正記事）」のみを物理削除し、
+            // 万が一「公開中（publish）の正規記事」が存在した場合は現在ログイン中の安全な管理者に所有権を引き継ぐ！
+            
+            // 3-a: 不正な下書き・ゴミ箱記事を個別削除
+            $draft_posts = $wpdb->get_col( $wpdb->prepare(
+                "SELECT ID FROM {$wpdb->posts} WHERE post_author = %d AND post_status IN ('draft', 'pending', 'trash')",
+                $uid
+            ) );
+            foreach ( $draft_posts as $d_id ) {
+                wp_delete_post( (int) $d_id, true );
+            }
+
+            // 3-b: 公開中記事があれば現在管理者に所有権を移譲した上でユーザーを削除
+            // wp_delete_user の第2引数に $current_user_id を指定することで、残った公開記事は安全に保護される
+            if ( wp_delete_user( $uid, $current_user_id ) ) {
                 $deleted_count++;
             }
         }
 
-        wp_send_json_success( array( 'deleted_count' => $deleted_count ) );
+        wp_send_json_success( array(
+            'deleted_count' => $deleted_count,
+            'skipped_count' => $skipped_count,
+        ) );
     }
 
     /**
@@ -413,7 +542,7 @@ class WP_Incident_Sweeper {
                         <span class="dashicons dashicons-shield" style="font-size:24px;width:24px;height:24px;color:#0284c7;"></span>
                         インシデント巡回スイーパー (WP Incident Sweeper)
                     </h1>
-                    <p>サイト内の全コンテンツ（公開・下書き・ゴミ箱）およびユーザーを一括クロールし、不正な痕跡を瞬時に特定・駆除します。</p>
+                    <p>サイト内の全コンテンツ（公開・下書き・ゴミ箱）およびユーザーを一括クロールし、不正な痕跡を特定・安全に駆除します。</p>
                 </div>
                 <div class="wpis-actions">
                     <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-csv">
@@ -461,7 +590,7 @@ class WP_Incident_Sweeper {
                 </button>
                 <button type="button" class="wpis-tab-btn" data-tab="guide">
                     <span class="dashicons dashicons-info" style="font-size:18px;width:18px;height:18px;"></span>
-                    巡回チェックガイド＆検知KW
+                    巡回チェックガイド＆安全ガード仕様
                 </button>
             </div>
 
@@ -482,7 +611,7 @@ class WP_Incident_Sweeper {
                     </div>
                     <div class="wpis-bulk-actions">
                         <button type="button" class="wpis-btn wpis-btn-secondary wpis-btn-sm" id="wpis-btn-trash-selected" disabled>
-                            選択した項目をゴミ箱へ
+                            選択した項目をゴミ箱へ（安全）
                         </button>
                         <button type="button" class="wpis-btn wpis-btn-danger wpis-btn-sm" id="wpis-btn-delete-selected" disabled>
                             選択した項目を完全削除
@@ -515,11 +644,13 @@ class WP_Incident_Sweeper {
             <div class="wpis-panel" id="wpis-panel-users">
                 <div class="wpis-table-toolbar">
                     <div class="wpis-filter-group">
-                        <span style="font-size:13px;color:#64748b;">※不審ユーザーを削除すると、そのユーザーが作成した下書き・投稿等のコンテンツも自動で一括削除されます。</span>
+                        <span style="font-size:13px;color:#64748b;">
+                            🛡️ <strong>安全保護機能:</strong> 不審ユーザー削除時、下書き等の不正記事のみ消去され、公開中の正規記事は現在の管理者に安全に引き継がれます。
+                        </span>
                     </div>
                     <div class="wpis-bulk-actions">
                         <button type="button" class="wpis-btn wpis-btn-danger wpis-btn-sm" id="wpis-btn-delete-users" disabled>
-                            選択したユーザーを完全削除
+                            選択した不審ユーザーを削除
                         </button>
                     </div>
                 </div>
@@ -533,12 +664,13 @@ class WP_Incident_Sweeper {
                                 <th>ユーザー名</th>
                                 <th>メールアドレス</th>
                                 <th style="width:110px;">権限グループ</th>
+                                <th style="width:130px;">公開 / 下書き数</th>
                                 <th style="width:160px;">登録日時 (JST)</th>
                                 <th>検知理由</th>
                             </tr>
                         </thead>
                         <tbody id="wpis-users-tbody">
-                            <tr><td colspan="7" class="wpis-empty-state">スキャン準備中...</td></tr>
+                            <tr><td colspan="8" class="wpis-empty-state">スキャン準備中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -547,30 +679,21 @@ class WP_Incident_Sweeper {
             <!-- Panel: Guide -->
             <div class="wpis-panel" id="wpis-panel-guide">
                 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:24px;line-height:1.7;">
-                    <h2 style="font-size:16px;margin-top:0;">🛡️ 巡回時の確認ポイントと運用手順</h2>
-                    <ol style="padding-left:20px;font-size:14px;color:#334155;">
-                        <li><strong>プラグインの有効化:</strong> 管理画面の「プラグイン > 新規追加 > プラグインのアップロード」から <code>wp-incident-sweeper.zip</code> をアップロードして有効化します。</li>
-                        <li><strong>画面を開くと自動スキャン:</strong> 管理画面左メニューの「巡回スイーパー」を開くと、サイト内の全コンテンツとユーザーが自動でクロールされます。</li>
-                        <li><strong>「🚨 危険項目を一括選択」を活用:</strong> 改ざん記事（<code>Hacked by...</code>）や不審ユーザー作成記事があれば、ボタン1つで一括チェックが入ります。</li>
-                        <li><strong>一括完全削除:</strong> 「選択した項目を完全削除」を押せば、ゴミ箱を経由せず一発で消去されます。</li>
-                        <li><strong>ユーザーの確認・削除:</strong> 「ユーザー監査」タブにて、<code>wp2_*</code> や 7月インシデント期間登録のユーザーが残っていないか確認し、必要に応じて削除します。</li>
-                        <li><strong>CSV出力（エビデンス保全）:</strong> 右上の「結果をCSV出力」をクリックすると、巡回結果のレポートがダウンロードできます。インフラチームや上長への報告用証拠として保管できます。</li>
-                        <li><strong>完了後のプラグイン削除:</strong> 巡回と駆除が完了したら、管理画面の「プラグイン一覧」から停止・削除して問題ありません（DBに余計なデータを一切残さない安全設計です）。</li>
-                    </ol>
-
-                    <h3 style="font-size:15px;margin-top:24px;">🔍 組み込み検知キーワード一覧</h3>
-                    <div style="font-size:13px;color:#475569;">
-                        <p><strong>🚨 危険度（高）：</strong> 改ざん・ハッカー署名・Webシェル痕跡<br>
-                        <code><?php echo esc_html( implode( ', ', $this->threat_keywords_high ) ); ?></code></p>
-
-                        <p><strong>⚠️ 危険度（中）：</strong> SEOスパム・カジノ・医薬品・不正コード・隠しテキスト<br>
-                        <code><?php echo esc_html( implode( ', ', $this->threat_keywords_medium ) ); ?></code></p>
-
-                        <p><strong>👤 ユーザー検知条件：</strong><br>
-                        ・ユーザー名が <code>wp2_*</code> で始まる<br>
-                        ・登録時期が <strong>2026年7月17日〜7月25日</strong>（wp2shell脆弱性インシデント期間）<br>
-                        ・使い捨て/不審メアドドメイン（<code>.invalid</code>, <code>@wp2shell.invalid</code>, <code>tempmail</code> 等）</p>
-                    </div>
+                    <h2 style="font-size:16px;margin-top:0;">🛡️ 巻き込み事故を防止する「多重安全ガード仕様」</h2>
+                    <p style="font-size:13px;color:#475569;">本ツールは本番環境での安全な運用のため、他記事や正規ユーザー、DBテーブルへの巻き込み事故を論理的・物理的に防止する4重のガード機構を標準装備しています。</p>
+                    
+                    <ul style="padding-left:20px;font-size:13px;color:#334155;">
+                        <li><strong>ガード1（システム重要ページの完全保護）：</strong><br>
+                            トップページ（<code>page_on_front</code>）、ブログ一覧ページ（<code>page_for_posts</code>）、プライバシーポリシーページ等のシステム設定ページは「🔒 システム保護」として判定され、削除処理から強制的に除外（スキップ）されます。</li>
+                        <li><strong>ガード2（許可された投稿タイプのみ対象）：</strong><br>
+                            投稿（post）、固定ページ（page）、公開カスタム投稿タイプのみを対象とし、添付ファイル（画像実体）、ナビゲーションメニュー、システム内部データ（ブロック定義等）への連鎖削除・巻き込みは一切発生しません。</li>
+                        <li><strong>ガード3（公開中記事の誤完全削除ブロック）：</strong><br>
+                            ステータスが「公開中（publish）」で、かつ明確な改ざんシグネチャがない記事は、万が一「完全削除」を実行しても物理削除を拒否し、「ゴミ箱への移動（いつでも復元可能）」に安全にフォールバックします。</li>
+                        <li><strong>ガード4（ユーザー削除時の公開記事所有権移譲）：</strong><br>
+                            不審ユーザーを削除する際、下書き（draft）やゴミ箱内の不正記事のみが完全消去され、万が一公開中（publish）の正規記事が存在した場合は、削除を実行している管理者に所有権が自動で引き継がれ、記事が消滅することはありません。</li>
+                        <li><strong>ガード5（自身・初期管理者の保護）：</strong><br>
+                            ログイン中の管理者自身、およびID: 1 のマスター管理者アカウントはチェック・削除できないよう物理的に保護されています。</li>
+                    </ul>
                 </div>
             </div>
         </div>
