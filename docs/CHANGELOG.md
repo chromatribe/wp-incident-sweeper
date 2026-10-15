@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [2.20261015.11] - 2026-10-15
+
+### Fixed & Improved
+- **絵文字画像（s.w.org）リンク切れ防止 & バッジの完全Lucide SVG化:**
+  - イントラネット・CSP・オフライン・広告ブロッカー環境において、WordPressコアの絵文字スクリプト（`wp-emoji-release.min.js`）が `s.w.org` からの絵文字画像取得に失敗し、ヘッダーバッジ等で画像リンク切れアイコンが表示される不具合を根本解消。
+  - ヘッダーバッジ（検知シグネチャ `ShieldCheck`、マイKW `Target`）、メトリクスカード、ボタン、規約カード内の生絵文字をすべてインライン Lucide SVG に置換。
+  - `admin_init` および `enqueue_assets` において `print_emoji_detection_script` と `print_emoji_styles` を除去。
+  - `admin.css` に `.wpis-app img.emoji` 非表示の安全フォールバックを追加。
+  - 総合テストスイートに `test_emoji_broken_image_defense` を追加（全16テストPASS）。
+
 ## [2.20261015.10] - 2026-10-15
 
 ### Added & Localized

@@ -1,5 +1,21 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-15 | v2.20261015.11 絵文字画像（s.w.org）リンク切れ防止 & バッジの完全Lucide SVG化
+- 🧠 思考:
+  1. 一部環境（イントラネット、ローカル開発、厳格なCSP `img-src 'self'`、広告・トラッカー遮断環境）において、WordPress標準の絵文字置換スクリプト（`wp-emoji-release.min.js`）が `s.w.org` からの絵文字SVG取得に失敗・ブロックされる。
+  2. その結果、ブラウザが絵文字の代わりに壊れた画像プレースホルダー `[x]` と代替テキストを表示してしまっていた。
+  3. セキュリティ監査ツールとして完全なスタンドアロン（ゼロ外部通信）を実現するため、UIヘッダーやボタン・カード内の絵文字をすべてインライン Lucide SVG に換装し、さらにWordPressコアの絵文字スクリプト出力を無効化（`remove_action`）して根本解決する。
+- 🔨 やった:
+  1. `wp-incident-sweeper.php` のヘッダーバッジ（検知シグネチャ、マイKW）、メトリクスカード、一括選択ボタン、法令カード、モーダル見出しから生絵文字を排除し、インライン Lucide SVG（`ShieldCheck`, `Target`, `AlertTriangle` 等）に完全移行。
+  2. `__construct` 内の `admin_init` および `enqueue_assets` において `remove_action( 'admin_print_scripts', 'print_emoji_detection_script' )` および `print_emoji_styles` を呼び出し、プラグイン画面上でのコア絵文字画像置換スクリプト注入を停止。
+  3. `admin.css` に `.wpis-app img.emoji { display: none !important; }` を追加し、万一の画像置換時にもリンク切れ枠が表示されない多重防御を施した。
+  4. 総合テストスイートに `test_emoji_broken_image_defense` を追加（全16テストPASS）。
+  5. Qlypx方式に基づき、全7ファイルを `2.20261015.11` に同期。
+- ❌ 失敗: なし。
+- ✅ 成功: `test_sweeper.py` 全16テスト完全合格、`check_version_sync.py` PASS。
+- 🧭 決定: 管理画面UIのあらゆる装飾はインライン Lucide SVG に統一し、外部通信やWordPressコアの画像変換によるレイアウト崩れ・リンク切れを恒久的に防止する。
+- 🔗 参照: `wp-incident-sweeper/wp-incident-sweeper.php` / `wp-incident-sweeper/assets/css/admin.css`
+
 ## 2026-10-15 | v2.20261015.10 高需要地域・言語向けローカライゼーション (l10n) の完全実装 (`en_US`, `id_ID`, `es_ES`, `de_DE`)
 - 🧠 思考:
   1. インシデント対応ツールとして真に現場で役立つためには、改ざんやスパム被害が国際的に多発している地域、および厳格なセキュリティ・プライバシー規準を求める地域の母国語に対応する必要がある。
