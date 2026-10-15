@@ -3,7 +3,7 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。単一サイトおよびマルチサイト（サイトネットワーク管理）の両方に完全対応し、コンテキストに応じてUIが自動最適化されます。
- * Version: 2.20261015.3
+ * Version: 2.20261015.4
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -156,14 +156,14 @@ class WP_Incident_Sweeper {
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '2.20261015.3'
+            '2.20261015.4'
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '2.20261015.3',
+            '2.20261015.4',
             true
         );
 
@@ -195,7 +195,9 @@ class WP_Incident_Sweeper {
      * Ajax: サイト全体（マルチサイト時は傘下全サイト）のスキャン実行
      */
     public function ajax_run_scan() {
-        check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
+        if ( ! check_ajax_referer( 'wpis_nonce_action', '_wpnonce', false ) ) {
+            wp_send_json_error( array( 'message' => 'セキュリティトークン(Nonce)の検証に失敗しました。ページを再読み込みしてから再度お試しください。' ), 403 );
+        }
 
         $is_network_req = is_multisite() && ( isset( $_POST['is_network'] ) && '1' === $_POST['is_network'] );
 
@@ -311,8 +313,27 @@ class WP_Incident_Sweeper {
 
             $protected_post_ids = $this->get_protected_post_ids();
 
+            // 1. 本文（post_content）の改ざんシグネチャをSQLで超高速抽出（メモリ消費ゼロ）
+            $high_likes = array();
+            foreach ( $this->threat_keywords_high as $kw ) {
+                $high_likes[] = "p.post_content LIKE " . $wpdb->prepare( '%s', '%' . $wpdb->esc_like( $kw ) . '%' );
+            }
+            $threat_high_ids = array_flip( array_map( 'intval', (array) $wpdb->get_col(
+                "SELECT p.ID FROM {$wpdb->posts} p WHERE p.post_type NOT IN ({$in_clause}) AND (" . implode( ' OR ', $high_likes ) . ")"
+            ) ) );
+
+            // 2. 本文のスパム・不審コードをSQLで超高速抽出
+            $med_likes = array();
+            foreach ( $this->threat_keywords_medium as $kw ) {
+                $med_likes[] = "p.post_content LIKE " . $wpdb->prepare( '%s', '%' . $wpdb->esc_like( $kw ) . '%' );
+            }
+            $threat_med_ids = array_flip( array_map( 'intval', (array) $wpdb->get_col(
+                "SELECT p.ID FROM {$wpdb->posts} p WHERE p.post_type NOT IN ({$in_clause}) AND (" . implode( ' OR ', $med_likes ) . ")"
+            ) ) );
+
+            // 3. メインクエリ（巨大な post_content を除外してメモリ枯渇・500/504エラーを完全防止）
             $sql = "
-                SELECT p.ID, p.post_title, p.post_name, p.post_type, p.post_status, p.post_author, p.post_modified, p.post_content, u.display_name AS author_name
+                SELECT p.ID, p.post_title, p.post_name, p.post_type, p.post_status, p.post_author, p.post_modified, u.display_name AS author_name
                 FROM {$wpdb->posts} p
                 LEFT JOIN {$wpdb->users} u ON p.post_author = u.ID
                 WHERE p.post_type NOT IN ({$in_clause})
@@ -347,22 +368,34 @@ class WP_Incident_Sweeper {
                         $reasons[] = '不審なユーザー（wp2_* 等）が作成した記事';
                     }
 
-                    $check_text = mb_strtolower( (string) $title . ' ' . (string) $slug . ' ' . (string) $row->post_content, 'UTF-8' );
+                    // 本文内の改ざんシグネチャ検知（SQL抽出結果）
+                    if ( isset( $threat_high_ids[ $post_id ] ) ) {
+                        $severity = 'high';
+                        $reasons[] = '🚨 改ざん・Webシェル痕跡（本文内）';
+                    }
 
+                    // タイトル・スラッグ内の危険キーワード検知（メモリ消費ゼロ）
+                    $title_slug_text = mb_strtolower( (string) $title . ' ' . (string) $slug, 'UTF-8' );
                     foreach ( $this->threat_keywords_high as $kw ) {
-                        if ( mb_strpos( $check_text, $kw ) !== false ) {
+                        if ( mb_strpos( $title_slug_text, $kw ) !== false ) {
                             $severity = 'high';
                             $reasons[] = '🚨 改ざん・Webシェル痕跡: "' . esc_html( $kw ) . '"';
                             break;
                         }
                     }
 
+                    // 中危険度（本文またはタイトル・スラッグ）
                     if ( $severity !== 'high' ) {
-                        foreach ( $this->threat_keywords_medium as $kw ) {
-                            if ( mb_strpos( $check_text, $kw ) !== false ) {
-                                $severity = 'medium';
-                                $reasons[] = '⚠️ スパム/不審コード: "' . esc_html( $kw ) . '"';
-                                break;
+                        if ( isset( $threat_med_ids[ $post_id ] ) ) {
+                            $severity = 'medium';
+                            $reasons[] = '⚠️ スパム/不審コード（本文内）';
+                        } else {
+                            foreach ( $this->threat_keywords_medium as $kw ) {
+                                if ( mb_strpos( $title_slug_text, $kw ) !== false ) {
+                                    $severity = 'medium';
+                                    $reasons[] = '⚠️ スパム/不審コード: "' . esc_html( $kw ) . '"';
+                                    break;
+                                }
                             }
                         }
                     }
@@ -398,9 +431,6 @@ class WP_Incident_Sweeper {
                         'edit_url'         => esc_url_raw( $edit_url ),
                         'reasons'          => $reasons,
                     );
-
-                    // メモリ保護のため本文データを即時解放
-                    unset( $row->post_content );
                 }
             }
 
@@ -427,7 +457,9 @@ class WP_Incident_Sweeper {
      * Ajax: 選択した投稿の一括削除/ゴミ箱移動（マルチサイト安全対応）
      */
     public function ajax_delete_posts() {
-        check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
+        if ( ! check_ajax_referer( 'wpis_nonce_action', '_wpnonce', false ) ) {
+            wp_send_json_error( array( 'message' => 'セキュリティトークン(Nonce)の検証に失敗しました。ページを再読み込みしてください。' ), 403 );
+        }
 
         $raw_items = isset( $_POST['items'] ) ? wp_unslash( $_POST['items'] ) : '[]';
         $items = json_decode( $raw_items, true );
@@ -525,7 +557,9 @@ class WP_Incident_Sweeper {
      * Ajax: 選択した不審ユーザーの一括削除（マルチサイト安全対応）
      */
     public function ajax_delete_users() {
-        check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
+        if ( ! check_ajax_referer( 'wpis_nonce_action', '_wpnonce', false ) ) {
+            wp_send_json_error( array( 'message' => 'セキュリティトークン(Nonce)の検証に失敗しました。ページを再読み込みしてください。' ), 403 );
+        }
 
         if ( is_multisite() ) {
             if ( ! current_user_can( 'manage_network_users' ) ) {

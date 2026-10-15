@@ -61,6 +61,21 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // Safe Ajax Request with HTML/Fatal Error detection
+  async function safeFetchJson(formData) {
+    const res = await fetch(ajaxUrl, { method: 'POST', body: formData });
+    const rawText = await res.text();
+    let json;
+    try {
+      json = JSON.parse(rawText);
+    } catch (parseErr) {
+      console.error('Non-JSON response:', rawText);
+      const snippet = rawText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
+      throw new Error(`サーバー通信エラー (HTTP ${res.status} ${res.statusText}):\n${snippet || '空または不正な応答'}`);
+    }
+    return json;
+  }
+
   // Run Scan
   async function runScan() {
     setLoading(true);
@@ -70,11 +85,10 @@ document.addEventListener('DOMContentLoaded', function () {
       formData.append('_wpnonce', nonce);
       formData.append('is_network', isNetwork ? '1' : '0');
 
-      const res = await fetch(ajaxUrl, { method: 'POST', body: formData });
-      const json = await res.json();
+      const json = await safeFetchJson(formData);
 
       if (!json.success) {
-        alert('スキャンに失敗しました: ' + (json.data?.message || '不明なエラー'));
+        alert('スキャンに失敗しました:\n' + (json.data?.message || '不明なエラー'));
         return;
       }
 
@@ -82,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function () {
       renderAll();
     } catch (err) {
       console.error(err);
-      alert('スキャン中に通信エラーが発生しました。');
+      alert('スキャン中にエラーが発生しました:\n' + (err.message || err));
     } finally {
       setLoading(false);
     }
@@ -282,11 +296,10 @@ document.addEventListener('DOMContentLoaded', function () {
       formData.append('items', JSON.stringify(selected));
       formData.append('force_delete', isPermanent ? '1' : '0');
 
-      const res = await fetch(ajaxUrl, { method: 'POST', body: formData });
-      const json = await res.json();
+      const json = await safeFetchJson(formData);
 
       if (!json.success) {
-        alert('削除処理に失敗しました: ' + (json.data?.message || '不明なエラー'));
+        alert('削除処理に失敗しました:\n' + (json.data?.message || '不明なエラー'));
         return;
       }
 
@@ -298,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
       runScan();
     } catch (err) {
       console.error(err);
-      alert('削除処理中に通信エラーが発生しました。');
+      alert('削除処理中にエラーが発生しました:\n' + (err.message || err));
     }
   }
 
@@ -385,11 +398,10 @@ document.addEventListener('DOMContentLoaded', function () {
       formData.append('_wpnonce', nonce);
       formData.append('user_ids', JSON.stringify(selected));
 
-      const res = await fetch(ajaxUrl, { method: 'POST', body: formData });
-      const json = await res.json();
+      const json = await safeFetchJson(formData);
 
       if (!json.success) {
-        alert('ユーザー削除に失敗しました: ' + (json.data?.message || '不明なエラー'));
+        alert('ユーザー削除に失敗しました:\n' + (json.data?.message || '不明なエラー'));
         return;
       }
 
@@ -401,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
       runScan();
     } catch (err) {
       console.error(err);
-      alert('ユーザー削除中に通信エラーが発生しました。');
+      alert('ユーザー削除中にエラーが発生しました:\n' + (err.message || err));
     }
   });
   }
