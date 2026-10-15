@@ -1,16 +1,24 @@
 # WP Incident Sweeper — プロジェクト定義
 
-**Current Version:** `2.20261015.10`
+**Current Version:** `2.20261015.11`
 
 ## 1. 概要
 WordPressサイト内の全コンテンツ（公開・下書き・ゴミ箱・非公開）および登録ユーザーを瞬時に一括スキャンし、改ざん痕跡（`Hacked by...`、`wp2_*` 等）を自動判定・安全に一括駆除する緊急セキュリティ・巡回ツール。マルチサイト（サイトネットワーク管理）環境にも完全対応し、傘下の全子サイトを横断スキャン可能。
 
 ## 2. バージョン体系（Qlypx方式）
 - 正本: `PROJECT.md` の `**Current Version:**`
-- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.10`）
+- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.11`）
 - 同期検証: `python3 scripts/check_version_sync.py`
 
 ## 3. Change Log
+
+### 2.20261015.11
+- **絵文字画像（s.w.org）リンク切れ防止 & バッジの完全Lucide SVG化:**
+  - イントラネット・CSP・オフライン・広告ブロッカー環境において、WordPressコアの絵文字スクリプト（`wp-emoji-release.min.js`）が `s.w.org` からの絵文字画像取得に失敗し、ヘッダーバッジ等で画像リンク切れアイコンが表示される不具合を根本解消。
+  - ヘッダーバッジ（検知シグネチャ `ShieldCheck`、マイKW `Target`）、メトリクスカード、ボタン、規約カード内の生絵文字をすべてインライン Lucide SVG に置換。
+  - `admin_init` および `enqueue_assets` において `print_emoji_detection_script` と `print_emoji_styles` を除去。
+  - `admin.css` に `.wpis-app img.emoji` 非表示の安全フォールバックを追加。
+  - 総合テストスイートに `test_emoji_broken_image_defense` を追加（全16テストPASS）。
 
 ### 2.20261015.10
 - **多言語ローカライゼーション (l10n) の高需要言語カタログ展開 (`en_US`, `id_ID`, `es_ES`, `de_DE`):**

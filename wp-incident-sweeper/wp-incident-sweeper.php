@@ -3,7 +3,7 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。単一サイトおよびマルチサイト（サイトネットワーク管理）の両方に完全対応し、コンテキストに応じてUIが自動最適化されます。
- * Version: 2.20261015.10
+ * Version: 2.20261015.11
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -18,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class WP_Incident_Sweeper {
 
+    const VERSION = '2.20261015.11';
     private static $instance = null;
 
     // 🚨 危険度：高（改ざん・ハッカー署名・Webシェル痕跡）
@@ -121,6 +122,9 @@ class WP_Incident_Sweeper {
 
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 
+        // 外部絵文字画像のリンク切れ表示防止（オフライン/CSP/イントラ環境対策）
+        add_action( 'admin_init', array( $this, 'disable_emojis_on_plugin_pages' ) );
+
         // 法令遵守・プライバシー対応（APPI / GDPR / 電気通信事業法外部送信開示）
         add_action( 'admin_init', array( $this, 'register_privacy_policy_content' ) );
         add_filter( 'wp_privacy_personal_data_exporters', array( $this, 'register_privacy_exporters' ) );
@@ -143,6 +147,16 @@ class WP_Incident_Sweeper {
             false,
             dirname( plugin_basename( __FILE__ ) ) . '/languages'
         );
+    }
+
+    /**
+     * オフライン・イントラ・CSP環境における絵文字画像（s.w.org）リンク切れ防止
+     */
+    public function disable_emojis_on_plugin_pages() {
+        if ( isset( $_GET['page'] ) && 'wp-incident-sweeper' === sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
+            remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
+            remove_action( 'admin_print_styles', 'print_emoji_styles' );
+        }
     }
 
     /**
@@ -438,18 +452,22 @@ class WP_Incident_Sweeper {
             return;
         }
 
+        // WordPress コア絵文字スクリプト（s.w.org からの画像置換）を無効化
+        remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
+        remove_action( 'admin_print_styles', 'print_emoji_styles' );
+
         wp_enqueue_style(
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '2.20261015.9'
+            self::VERSION
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '2.20261015.9',
+            self::VERSION,
             true
         );
 
@@ -1131,19 +1149,22 @@ class WP_Incident_Sweeper {
                     $my_kw = $this->get_my_keywords();
                     ?>
                     <div style="margin-top:8px;font-size:12px;color:#64748b;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                        <span style="background:#f1f5f9;border:1px solid #e2e8f0;padding:2px 8px;border-radius:4px;">
-                            🛡️ 検知シグネチャ: <code id="wpis-sig-version" style="font-weight:bold;color:#0f172a;"><?php echo esc_html( $sig['version'] ); ?></code>
+                        <span style="background:#f1f5f9;border:1px solid #e2e8f0;padding:2px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:5px;">
+                            <svg class="wpis-lucide" viewBox="0 0 24 24" width="14" height="14" style="color:#0284c7;"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+                            検知シグネチャ: <code id="wpis-sig-version" style="font-weight:bold;color:#0f172a;"><?php echo esc_html( $sig['version'] ); ?></code>
                             （危険: <strong id="wpis-sig-high" style="color:#dc2626;"><?php echo count( $sig['threat_keywords_high'] ); ?></strong>件 / 警告: <strong id="wpis-sig-med" style="color:#d97706;"><?php echo count( $sig['threat_keywords_medium'] ); ?></strong>件）
                         </span>
-                        <span style="background:#faf5ff;border:1px solid #e9d5ff;padding:2px 8px;border-radius:4px;color:#6b21a8;">
-                            🎯 マイKW: <strong id="wpis-badge-my-kw"><?php echo count( $my_kw ); ?></strong>件
+                        <span style="background:#faf5ff;border:1px solid #e9d5ff;padding:2px 8px;border-radius:4px;color:#6b21a8;display:inline-flex;align-items:center;gap:5px;">
+                            <svg class="wpis-lucide" viewBox="0 0 24 24" width="14" height="14" style="color:#9333ea;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                            マイKW: <strong id="wpis-badge-my-kw"><?php echo count( $my_kw ); ?></strong>件
                         </span>
                         <span style="font-size:11px;color:#94a3b8;">最終同期: <span id="wpis-sig-date"><?php echo esc_html( $sig['updated_at'] ); ?></span></span>
                     </div>
 
                     <?php if ( is_multisite() && ! $is_network ) : ?>
-                    <div style="margin-top:10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:8px 12px;font-size:12px;color:#0369a1;">
-                        ℹ️ <strong>サブサイト個別モード:</strong> 現在のサイト（<?php bloginfo( 'name' ); ?>）のみを対象にスキャンしています。全傘下サイトを一括横断スキャンする場合は、<a href="<?php echo esc_url( network_admin_url( 'admin.php?page=wp-incident-sweeper' ) ); ?>" style="color:#0284c7;font-weight:bold;text-decoration:underline;">サイトネットワーク管理のスイーパー</a> をご利用ください。
+                    <div style="margin-top:10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:8px 12px;font-size:12px;color:#0369a1;display:flex;align-items:center;gap:6px;">
+                        <svg class="wpis-lucide" viewBox="0 0 24 24" width="15" height="15" style="color:#0284c7;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <span><strong>サブサイト個別モード:</strong> 現在のサイト（<?php bloginfo( 'name' ); ?>）のみを対象にスキャンしています。全傘下サイトを一括横断スキャンする場合は、<a href="<?php echo esc_url( network_admin_url( 'admin.php?page=wp-incident-sweeper' ) ); ?>" style="color:#0284c7;font-weight:bold;text-decoration:underline;">サイトネットワーク管理のスイーパー</a> をご利用ください。</span>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -1180,7 +1201,10 @@ class WP_Incident_Sweeper {
                     <div class="wpis-metric-val" id="wpis-metric-total-posts">-</div>
                 </div>
                 <div class="wpis-metric-card is-danger">
-                    <div class="wpis-metric-label">🚨 危険・警告コンテンツ</div>
+                    <div class="wpis-metric-label" style="display:flex;align-items:center;gap:5px;">
+                        <svg class="wpis-lucide" viewBox="0 0 24 24" width="14" height="14" style="color:var(--danger);"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        危険・警告コンテンツ
+                    </div>
                     <div class="wpis-metric-val" id="wpis-metric-threat-posts">-</div>
                 </div>
                 <div class="wpis-metric-card is-primary">
@@ -1188,7 +1212,10 @@ class WP_Incident_Sweeper {
                     <div class="wpis-metric-val" id="wpis-metric-total-users">-</div>
                 </div>
                 <div class="wpis-metric-card is-danger">
-                    <div class="wpis-metric-label">🚨 不審なユーザー（wp2_* 等）</div>
+                    <div class="wpis-metric-label" style="display:flex;align-items:center;gap:5px;">
+                        <svg class="wpis-lucide" viewBox="0 0 24 24" width="14" height="14" style="color:var(--danger);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        不審なユーザー（wp2_* 等）
+                    </div>
                     <div class="wpis-metric-val" id="wpis-metric-threat-users">-</div>
                 </div>
             </div>
@@ -1232,7 +1259,8 @@ class WP_Incident_Sweeper {
                         </select>
                         <input type="text" class="wpis-search-input" id="wpis-posts-search" placeholder="タイトルや作成者で絞り込み...">
                         <button type="button" class="wpis-btn wpis-btn-secondary wpis-btn-sm" id="wpis-btn-select-threats">
-                            🚨 危険項目を一括選択
+                            <svg class="wpis-lucide" viewBox="0 0 24 24" width="14" height="14" style="color:var(--danger);"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            危険項目を一括選択
                         </button>
                     </div>
                     <div class="wpis-bulk-actions">
@@ -1356,8 +1384,8 @@ class WP_Incident_Sweeper {
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                         <!-- Card 1: 外部送信規律 -->
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
-                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:6px;">
-                                <span>📡</span> <?php esc_html_e( '電気通信事業法（外部送信規律）への対応', 'wp-incident-sweeper' ); ?>
+                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:8px;">
+                                <svg class="wpis-lucide" viewBox="0 0 24 24" width="16" height="16" style="color:#0284c7;"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg> <?php esc_html_e( '電気通信事業法（外部送信規律）への対応', 'wp-incident-sweeper' ); ?>
                             </h3>
                             <div style="font-size:12.5px;color:#334155;line-height:1.6;">
                                 <p style="margin-top:0;"><strong>【外部送信の明示と目的】</strong><br>
@@ -1373,8 +1401,8 @@ class WP_Incident_Sweeper {
 
                         <!-- Card 2: 個人情報保護法 & GDPR -->
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
-                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:6px;">
-                                <span>🔒</span> <?php esc_html_e( '個人情報保護法 (APPI) & GDPR 対応', 'wp-incident-sweeper' ); ?>
+                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:8px;">
+                                <svg class="wpis-lucide" viewBox="0 0 24 24" width="16" height="16" style="color:#0284c7;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> <?php esc_html_e( '個人情報保護法 (APPI) & GDPR 対応', 'wp-incident-sweeper' ); ?>
                             </h3>
                             <div style="font-size:12.5px;color:#334155;line-height:1.6;">
                                 <p style="margin-top:0;"><strong>【プライバシーポリシー連携と個人データ保護】</strong></p>
@@ -1388,8 +1416,8 @@ class WP_Incident_Sweeper {
 
                         <!-- Card 3: 不正アクセス禁止法 & 利用許諾条項 -->
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
-                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:6px;">
-                                <span>⚖️</span> <?php esc_html_e( '不正アクセス禁止法遵守 & 利用許諾条項', 'wp-incident-sweeper' ); ?>
+                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:8px;">
+                                <svg class="wpis-lucide" viewBox="0 0 24 24" width="16" height="16" style="color:#0284c7;"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg> <?php esc_html_e( '不正アクセス禁止法遵守 & 利用許諾条項', 'wp-incident-sweeper' ); ?>
                             </h3>
                             <div style="font-size:12.5px;color:#334155;line-height:1.6;">
                                 <p style="margin-top:0;"><strong>【適正な利用に関する遵守事項】</strong></p>
@@ -1402,8 +1430,8 @@ class WP_Incident_Sweeper {
 
                         <!-- Card 4: 免責事項 & バックアップ義務 -->
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
-                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:6px;">
-                                <span>⚠️</span> <?php esc_html_e( '免責事項 (Limitation of Liability) & バックアップ義務', 'wp-incident-sweeper' ); ?>
+                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:8px;">
+                                <svg class="wpis-lucide" viewBox="0 0 24 24" width="16" height="16" style="color:#d97706;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <?php esc_html_e( '免責事項 (Limitation of Liability) & バックアップ義務', 'wp-incident-sweeper' ); ?>
                             </h3>
                             <div style="font-size:12.5px;color:#334155;line-height:1.6;">
                                 <p style="margin-top:0;"><strong>【現状有姿 (AS IS) 提供と事前バックアップ義務】</strong></p>
@@ -1423,7 +1451,7 @@ class WP_Incident_Sweeper {
                 <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:540px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1),0 10px 10px -5px rgba(0,0,0,0.04);position:relative;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
                         <h3 style="margin:0;font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;color:#0f172a;">
-                            <span>🎯</span> マイKW設定（個別検知キーワード）
+                            <svg class="wpis-lucide" viewBox="0 0 24 24" width="18" height="18" style="color:#9333ea;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> マイKW設定（個別検知キーワード）
                         </h3>
                         <button type="button" id="wpis-btn-close-my-kw" style="background:none;border:none;color:#94a3b8;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;line-height:1;" title="閉じる"><svg class="wpis-lucide" viewBox="0 0 24 24" width="20" height="20"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
                     </div>

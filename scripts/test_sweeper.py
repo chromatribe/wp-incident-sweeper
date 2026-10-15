@@ -314,6 +314,26 @@ def test_lucide_icons(php_text: str):
     print("  [PASS] Lucide SVG iconography verified (Zero Dashicons in app UI)")
 
 
+def test_emoji_broken_image_defense(php_text: str):
+    """オフライン/イントラ/CSP環境における絵文字画像（s.w.org）リンク切れ防止機構の検証"""
+    css_file = ROOT / "wp-incident-sweeper" / "assets/css/admin.css"
+    css_text = css_file.read_text(encoding="utf-8")
+
+    # 1. PHP 側での絵文字スクリプト除去 (remove_action)
+    assert "remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );" in php_text, "Must remove print_emoji_detection_script"
+    assert "remove_action( 'admin_print_styles', 'print_emoji_styles' );" in php_text, "Must remove print_emoji_styles"
+    assert "disable_emojis_on_plugin_pages" in php_text, "Must implement disable_emojis_on_plugin_pages handler"
+
+    # 2. CSS でのフォールバック非表示ルール
+    assert ".wpis-app img.emoji" in css_text, "admin.css must suppress img.emoji"
+    assert "display: none !important;" in css_text, "admin.css must hide broken emoji img tags"
+
+    # 3. ヘッダーバッジに生Unicode絵文字（🛡️, 🎯）の直接記載がないこと
+    assert "🛡️ 検知シグネチャ" not in php_text, "Header badge must use Lucide Shield SVG instead of unicode emoji"
+    assert "🎯 マイKW:" not in php_text, "Header badge must use Lucide Target SVG instead of unicode emoji"
+    print("  [PASS] Emoji broken-image defenses & Lucide badge encapsulation verified")
+
+
 def main():
     print("Running WP Incident Sweeper Test Suite...")
     php_text = PHP_FILE.read_text(encoding="utf-8")
@@ -329,6 +349,7 @@ def main():
     test_i18n_l10n_readiness(php_text, js_text)
     test_compliance_and_privacy(php_text)
     test_lucide_icons(php_text)
+    test_emoji_broken_image_defense(php_text)
 
     print("\nALL TESTS PASSED! Plugin is strictly verified.")
     return 0

@@ -454,3 +454,10 @@
   color: var(--danger-text);
   border: 1px solid #fecaca;
 }
+
+/* WordPress Core Emoji Suppression (Prevents broken image placeholders on offline/CSP/intranet sites) */
+.wpis-app img.emoji,
+.wpis-app img.wp-smiley {
+  display: none !important;
+}
+
