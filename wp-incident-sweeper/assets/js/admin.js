@@ -1,6 +1,6 @@
 /**
  * WP Incident Sweeper — Admin Client Script
- * Full Multisite / Network Admin support with robust safeguards
+ * Full Single-site & Multisite adaptive UI with strict security controls
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const nonce = wpisConfig.nonce;
   const ajaxUrl = wpisConfig.ajaxUrl;
   const adminUrl = wpisConfig.adminUrl;
-  const isMultisite = !!wpisConfig.isMultisite;
-  const isNetwork = !!wpisConfig.isNetwork || root.dataset.isNetwork === '1';
+  // ネットワーク管理画面（全傘下サイト横断モード）かどうかの厳密判定
+  const isNetwork = (root.dataset.isNetwork === '1') || (!!wpisConfig.isNetwork);
 
   let scanData = {
     posts: [],
@@ -89,11 +89,11 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function setLoading(isLoading) {
-    const colSpan = isMultisite ? 9 : 8;
+    const colSpan = isNetwork ? 9 : 8;
     if (isLoading) {
       btnScan.disabled = true;
       btnScan.textContent = isNetwork ? '全傘下サイトを巡回クロール中...' : 'スキャン中...';
-      postsBody.innerHTML = `<tr><td colspan="${colSpan}" class="wpis-loading-state"><div class="wpis-spinner"></div><div>${isNetwork ? '全傘下サイトの全コンテンツ・ユーザーを横断クロール中...' : 'サイト内を高速クロール中...'}</div></td></tr>`;
+      postsBody.innerHTML = `<tr><td colspan="${colSpan}" class="wpis-loading-state"><div class="wpis-spinner"></div><div>${isNetwork ? '全傘下サイトの全コンテンツ・ユーザーを横断クロール中...' : 'サイト内を高速クロール中（全投稿・固定ページ・ユーザー）...'}</div></td></tr>`;
       usersBody.innerHTML = `<tr><td colspan="7" class="wpis-loading-state"><div class="wpis-spinner"></div><div>ユーザーをスキャン中...</div></td></tr>`;
     } else {
       btnScan.disabled = false;
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function renderAll() {
-    if (metricTotalSites && scanData.summary.totalSites !== undefined) {
+    if (isNetwork && metricTotalSites && scanData.summary.totalSites !== undefined) {
       metricTotalSites.textContent = `${scanData.summary.totalSites} サイト`;
     }
     metricTotalPosts.textContent = scanData.summary.totalPosts;
@@ -113,8 +113,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('wpis-badge-posts-threat').textContent = scanData.summary.threatPosts;
     document.getElementById('wpis-badge-users-threat').textContent = scanData.summary.threatUsers;
 
-    // Populate site filter if multisite
-    if (postsSiteFilter && scanData.sites && scanData.sites.length > 0) {
+    // ネットワーク管理画面時のみサイト別フィルターを動的生成
+    if (isNetwork && postsSiteFilter && scanData.sites && scanData.sites.length > 0) {
       const currentVal = postsSiteFilter.value;
       postsSiteFilter.innerHTML = '<option value="all">全傘下サイト</option>' +
         scanData.sites.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (ID: ${s.id})</option>`).join('');
@@ -127,13 +127,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Render Posts Table
   function renderPosts() {
-    const colSpan = isMultisite ? 9 : 8;
+    const colSpan = isNetwork ? 9 : 8;
     const filterVal = postsFilter.value;
-    const siteVal = postsSiteFilter ? postsSiteFilter.value : 'all';
+    const siteVal = (isNetwork && postsSiteFilter) ? postsSiteFilter.value : 'all';
     const query = (postsSearch.value || '').toLowerCase().trim();
 
     const filtered = scanData.posts.filter(item => {
-      if (siteVal !== 'all' && String(item.blog_id) !== siteVal) return false;
+      if (isNetwork && siteVal !== 'all' && String(item.blog_id) !== siteVal) return false;
       if (filterVal === 'threat_high' && item.severity !== 'high') return false;
       if (filterVal === 'threat_all' && item.severity === 'clean') return false;
       if (filterVal === 'draft_trash' && !['draft', 'trash', 'pending', 'private'].includes(item.status)) return false;
@@ -181,11 +181,15 @@ document.addEventListener('DOMContentLoaded', function () {
         : '<span style="color:#94a3b8;">-</span>';
 
       const safeId = parseInt(item.id, 10);
-      const safeBlogId = parseInt(item.blog_id || 1, 10);
-      const editUrl = item.edit_url || `${adminUrl}post.php?post=${safeId}&action=edit`;
+      const rawEditUrl = item.edit_url || `${adminUrl}post.php?post=${safeId}&action=edit`;
+      const safeEditUrl = (/^https?:\/\//i.test(rawEditUrl) || rawEditUrl.startsWith('/'))
+        ? escapeHtml(rawEditUrl)
+        : '#';
 
       const checkboxDisabled = item.is_protected ? 'disabled title="システム保護対象のため選択できません"' : '';
-      const siteCell = isMultisite
+
+      // ネットワーク管理画面時のみ「対象サイト」セルを表示
+      const siteCell = isNetwork
         ? `<td style="font-size:12px;font-weight:600;color:#0369a1;"><span class="wpis-badge wpis-badge-muted">${escapeHtml(item.blog_name || 'サイト:' + safeBlogId)}</span></td>`
         : '';
 
@@ -197,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <td>${severityBadge}</td>
           ${siteCell}
           <td>
-            <strong><a href="${editUrl}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;">${escapeHtml(item.title || '(タイトルなし)')}</a></strong>
+            <strong><a href="${safeEditUrl}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;">${escapeHtml(item.title || '(タイトルなし)')}</a></strong>
             <div style="font-size:11px;color:#94a3b8;margin-top:2px;">ID: ${safeId} | スラッグ: ${escapeHtml(item.slug || '-')}</div>
           </td>
           <td><span class="wpis-badge wpis-badge-muted">${escapeHtml(item.post_type)}</span></td>
@@ -345,8 +349,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function updateUserActionButtons() {
     const selected = usersBody.querySelectorAll('.wpis-user-check:checked');
-    btnDeleteUsers.disabled = selected.length === 0;
-    btnDeleteUsers.textContent = selected.length > 0 ? `選択した${selected.length}名の不審ユーザーを削除` : '選択した不審ユーザーを削除';
+    if (btnDeleteUsers) {
+      btnDeleteUsers.disabled = selected.length === 0;
+      btnDeleteUsers.textContent = selected.length > 0 ? `選択した${selected.length}名の不審ユーザーを削除` : '選択した不審ユーザーを削除';
+    }
   }
 
   usersCheckAll.addEventListener('change', () => {
@@ -356,7 +362,8 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Delete Users with absolute safety
-  btnDeleteUsers.addEventListener('click', async () => {
+  if (btnDeleteUsers) {
+    btnDeleteUsers.addEventListener('click', async () => {
     const selected = Array.from(usersBody.querySelectorAll('.wpis-user-check:checked'))
       .map(c => parseInt(c.value, 10))
       .filter(id => !isNaN(id) && id > 0);
@@ -366,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const msg = `【安全確認: 不審ユーザーの削除】\n` +
                 `選択された ${selected.length} 名の不審ユーザーを削除します。\n\n` +
                 `🛡️ 巻き込み防止ガード:\n` +
-                `・全傘下サイトに散らばった不正な下書き・ゴミ箱記事のみが完全消去されます。\n` +
+                `・不正な下書き・ゴミ箱記事のみが完全消去されます。\n` +
                 `・公開中の正規記事は安全に保護されます。\n\n` +
                 `実行しますか？`;
 
@@ -397,8 +404,9 @@ document.addEventListener('DOMContentLoaded', function () {
       alert('ユーザー削除中に通信エラーが発生しました。');
     }
   });
+  }
 
-  // Export CSV
+  // Export CSV (with CSV Injection protection)
   btnExportCsv.addEventListener('click', () => {
     if (scanData.posts.length === 0 && scanData.users.length === 0) {
       alert('エクスポートするスキャンデータがありません。先にスキャンを実行してください。');
@@ -406,14 +414,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     let csv = '\uFEFF';
-    csv += 'タイプ,対象サイト,ID,タイトル/ログイン名,ステータス/ロール,作成者/メール,作成・登録日,判定,検知理由\n';
+    if (isNetwork) {
+      csv += 'タイプ,対象サイト,ID,タイトル/ログイン名,ステータス/ロール,作成者/メール,作成・登録日,判定,検知理由\n';
+    } else {
+      csv += 'タイプ,ID,タイトル/ログイン名,ステータス/ロール,作成者/メール,作成・登録日,判定,検知理由\n';
+    }
 
     scanData.posts.forEach(p => {
-      csv += `投稿/固定ページ,"${cleanCsv(p.blog_name || '')}",${p.id},"${cleanCsv(p.title)}",${p.status},"${cleanCsv(p.author_name)}",${p.modified_date},${p.severity},"${cleanCsv(p.reasons.join('; '))}"\n`;
+      const siteCol = isNetwork ? `"${cleanCsv(p.blog_name || '')}",` : '';
+      csv += `投稿/固定ページ,${siteCol}${p.id},"${cleanCsv(p.title)}",${p.status},"${cleanCsv(p.author_name)}",${p.modified_date},${p.severity},"${cleanCsv(p.reasons.join('; '))}"\n`;
     });
 
     scanData.users.forEach(u => {
-      csv += `ユーザー,"ネットワーク全体",${u.id},"${cleanCsv(u.login)}","${u.roles.join(';')}",${u.email},${u.registered},${u.is_threat ? 'danger' : 'clean'},"${cleanCsv(u.threat_reasons.join('; '))}"\n`;
+      const siteCol = isNetwork ? `"ネットワーク全体",` : '';
+      csv += `ユーザー,${siteCol}${u.id},"${cleanCsv(u.login)}","${u.roles.join(';')}",${cleanCsv(u.email)},${u.registered},${u.is_threat ? 'danger' : 'clean'},"${cleanCsv(u.threat_reasons.join('; '))}"\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -425,9 +439,15 @@ document.addEventListener('DOMContentLoaded', function () {
     URL.revokeObjectURL(url);
   });
 
-  function cleanCsv(str) {
-    if (!str) return '';
-    return String(str).replace(/"/g, '""');
+  // CSVインジェクション防止（=, +, -, @ で始まる数式実行脆弱性を完全防御）
+  function cleanCsv(val) {
+    if (val === null || val === undefined) return '';
+    let str = String(val).replace(/"/g, '""');
+    // セル先頭が数式トリガー記号の場合、シングルクォートで無害化
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = "'" + str;
+    }
+    return str;
   }
 
   function escapeHtml(str) {

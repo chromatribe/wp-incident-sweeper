@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
- * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。マルチサイト（サイトネットワーク管理）環境にも完全対応し、傘下の全子サイトを一括横断クロール・駆除できます。
- * Version: 2.20261015.2
+ * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。単一サイトおよびマルチサイト（サイトネットワーク管理）の両方に完全対応し、コンテキストに応じてUIが自動最適化されます。
+ * Version: 2.20261015.3
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -156,14 +156,14 @@ class WP_Incident_Sweeper {
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '2.20261015.2'
+            '2.20261015.3'
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '2.20261015.2',
+            '2.20261015.3',
             true
         );
 
@@ -197,11 +197,11 @@ class WP_Incident_Sweeper {
     public function ajax_run_scan() {
         check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
 
-        $is_network_req = ( isset( $_POST['is_network'] ) && '1' === $_POST['is_network'] );
+        $is_network_req = is_multisite() && ( isset( $_POST['is_network'] ) && '1' === $_POST['is_network'] );
 
         if ( $is_network_req ) {
-            if ( ! current_user_can( 'manage_network' ) && ! current_user_can( 'manage_options' ) ) {
-                wp_send_json_error( array( 'message' => '操作権限がありません（manage_networkが必要です）。' ), 403 );
+            if ( ! current_user_can( 'manage_network' ) ) {
+                wp_send_json_error( array( 'message' => 'ネットワーク横断スキャンの操作権限がありません（特権管理者権限が必要です）。' ), 403 );
             }
         } else {
             if ( ! current_user_can( 'manage_options' ) ) {
@@ -217,7 +217,12 @@ class WP_Incident_Sweeper {
         // 対象サイト一覧の構築
         $sites_to_scan = array();
         if ( is_multisite() && $is_network_req ) {
-            $site_objs = get_sites( array( 'number' => 200, 'deleted' => 0 ) );
+            $site_objs = get_sites( array(
+                'number'   => 200,
+                'deleted'  => 0,
+                'archived' => 0,
+                'spam'     => 0,
+            ) );
             foreach ( $site_objs as $s ) {
                 $b_details = get_blog_details( (int) $s->blog_id );
                 $sites_to_scan[] = array(
@@ -234,7 +239,7 @@ class WP_Incident_Sweeper {
             );
         }
 
-        // 1. ユーザーのスキャン（ネットワーク共通）
+        // 1. ユーザーのスキャン
         $users_data = array();
         $threat_user_ids = array();
         $all_users = get_users();
@@ -289,7 +294,7 @@ class WP_Incident_Sweeper {
             );
         }
 
-        // 2. 傘下サイトの全投稿・固定ページのスキャン（switch_to_blogで完全横断）
+        // 2. 投稿・固定ページ・全カスタム投稿タイプのスキャン（switch_to_blogで完全横断）
         $exclude_types = array( 'revision', 'attachment', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache', 'user_request', 'wp_block', 'wp_template', 'wp_template_part', 'wp_global_styles', 'wp_navigation' );
         $in_clause = "'" . implode( "','", array_map( 'esc_sql', $exclude_types ) ) . "'";
 
@@ -342,7 +347,7 @@ class WP_Incident_Sweeper {
                         $reasons[] = '不審なユーザー（wp2_* 等）が作成した記事';
                     }
 
-                    $check_text = mb_strtolower( $title . ' ' . $slug . ' ' . $row->post_content, 'UTF-8' );
+                    $check_text = mb_strtolower( (string) $title . ' ' . (string) $slug . ' ' . (string) $row->post_content, 'UTF-8' );
 
                     foreach ( $this->threat_keywords_high as $kw ) {
                         if ( mb_strpos( $check_text, $kw ) !== false ) {
@@ -393,6 +398,9 @@ class WP_Incident_Sweeper {
                         'edit_url'         => esc_url_raw( $edit_url ),
                         'reasons'          => $reasons,
                     );
+
+                    // メモリ保護のため本文データを即時解放
+                    unset( $row->post_content );
                 }
             }
 
@@ -416,16 +424,16 @@ class WP_Incident_Sweeper {
     }
 
     /**
-     * Ajax: 選択した投稿の一括削除/ゴミ箱移動（マルチサイト対応）
+     * Ajax: 選択した投稿の一括削除/ゴミ箱移動（マルチサイト安全対応）
      */
     public function ajax_delete_posts() {
         check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
 
-        $raw_items = isset( $_POST['items'] ) ? sanitize_text_field( wp_unslash( $_POST['items'] ) ) : '[]';
+        $raw_items = isset( $_POST['items'] ) ? wp_unslash( $_POST['items'] ) : '[]';
         $items = json_decode( $raw_items, true );
         $force_delete = ( isset( $_POST['force_delete'] ) && '1' === $_POST['force_delete'] );
 
-        if ( ! is_array( $items) || empty( $items ) ) {
+        if ( ! is_array( $items ) || empty( $items ) ) {
             wp_send_json_error( array( 'message' => '削除対象が選択されていません。' ) );
         }
 
@@ -437,6 +445,14 @@ class WP_Incident_Sweeper {
             $blog_id = isset( $item['blog_id'] ) ? absint( $item['blog_id'] ) : get_current_blog_id();
 
             if ( $pid <= 0 ) continue;
+
+            // マルチサイトで他サイトの投稿を操作する場合、特権管理者権限を必須化
+            if ( is_multisite() && $blog_id > 0 && $blog_id !== get_current_blog_id() ) {
+                if ( ! current_user_can( 'manage_network' ) ) {
+                    $skipped_count++;
+                    continue;
+                }
+            }
 
             if ( is_multisite() && $blog_id > 0 ) {
                 switch_to_blog( $blog_id );
@@ -468,7 +484,7 @@ class WP_Incident_Sweeper {
 
             // 公開中かつ改ざんシグネチャがない記事はゴミ箱へ安全退避
             if ( $force_delete && 'publish' === $post->post_status ) {
-                $check_text = mb_strtolower( $post->post_title . ' ' . $post->post_name . ' ' . $post->post_content, 'UTF-8' );
+                $check_text = mb_strtolower( (string) $post->post_title . ' ' . (string) $post->post_name . ' ' . (string) $post->post_content, 'UTF-8' );
                 $is_confirmed_threat = false;
                 foreach ( $this->threat_keywords_high as $kw ) {
                     if ( mb_strpos( $check_text, $kw ) !== false ) {
@@ -512,12 +528,12 @@ class WP_Incident_Sweeper {
         check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
 
         if ( is_multisite() ) {
-            if ( ! current_user_can( 'manage_network_users' ) && ! current_user_can( 'delete_users' ) ) {
-                wp_send_json_error( array( 'message' => 'ユーザーの削除権限がありません。' ), 403 );
+            if ( ! current_user_can( 'manage_network_users' ) ) {
+                wp_send_json_error( array( 'message' => 'マルチサイト環境でのユーザー削除権限がありません（サイトネットワーク管理者・特権管理者権限が必要です）。' ), 403 );
             }
         } else {
             if ( ! current_user_can( 'delete_users' ) ) {
-                wp_send_json_error( array( 'message' => 'ユーザーの削除権限がありません。' ), 403 );
+                wp_send_json_error( array( 'message' => 'ユーザーの削除権限がありません（delete_usersが必要です）。' ), 403 );
             }
         }
 
@@ -528,7 +544,7 @@ class WP_Incident_Sweeper {
 
         global $wpdb;
 
-        $raw_ids = isset( $_POST['user_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['user_ids'] ) ) : '[]';
+        $raw_ids = isset( $_POST['user_ids'] ) ? wp_unslash( $_POST['user_ids'] ) : '[]';
         $user_ids = json_decode( $raw_ids, true );
 
         if ( ! is_array( $user_ids ) || empty( $user_ids ) ) {
@@ -556,13 +572,17 @@ class WP_Incident_Sweeper {
             }
 
             $is_threat_user = false;
+            $is_explicit_attacker = false;
+
             if ( strpos( $user_obj->user_login, 'wp2_' ) === 0 ) {
                 $is_threat_user = true;
+                $is_explicit_attacker = true;
             }
             $u_email = strtolower( $user_obj->user_email );
             foreach ( $this->suspicious_email_domains as $bad_domain ) {
                 if ( strpos( $u_email, $bad_domain ) !== false ) {
                     $is_threat_user = true;
+                    $is_explicit_attacker = true;
                     break;
                 }
             }
@@ -576,7 +596,13 @@ class WP_Incident_Sweeper {
                 continue;
             }
 
-            // マルチサイト全サイト横断での不正下書き削除＆公開記事保護
+            // 特権管理者（Super Admin）の巻き込み事故防止ガード:
+            // 攻撃シグネチャ（wp2_ または 不審ドメイン）に明示一致しない限り、特権管理者は削除不可
+            if ( is_multisite() && is_super_admin( $uid ) && ! $is_explicit_attacker ) {
+                $skipped_count++;
+                continue;
+            }
+
             if ( is_multisite() ) {
                 $sites = get_sites( array( 'number' => 200, 'deleted' => 0 ) );
                 foreach ( $sites as $s ) {
@@ -590,7 +616,6 @@ class WP_Incident_Sweeper {
                     }
                     restore_current_blog();
                 }
-                // ネットワークからの完全消去（公開記事は $current_user_id に引き継ぎ）
                 if ( wpmu_delete_user( $uid ) ) {
                     $deleted_count++;
                 }
@@ -615,7 +640,7 @@ class WP_Incident_Sweeper {
     }
 
     /**
-     * 管理画面UIレンダリング
+     * 管理画面UIレンダリング（単サイト・マルチサイトを完全切り分け）
      */
     public function render_admin_page() {
         $is_network = is_multisite() && is_network_admin();
@@ -626,7 +651,7 @@ class WP_Incident_Sweeper {
                 <div class="wpis-title-area">
                     <h1>
                         <span class="dashicons dashicons-shield" style="font-size:24px;width:24px;height:24px;color:#0284c7;"></span>
-                        インシデント巡回スイーパー <?php echo $is_network ? '<span class="wpis-badge wpis-badge-danger" style="font-size:12px;margin-left:8px;">ネットワーク全体（全子サイト横断モード）</span>' : ''; ?>
+                        インシデント巡回スイーパー <?php echo $is_network ? '<span class="wpis-badge wpis-badge-danger" style="font-size:12px;margin-left:8px;">全傘下サイト横断モード</span>' : ''; ?>
                     </h1>
                     <p>
                         <?php if ( $is_network ) : ?>
@@ -635,6 +660,11 @@ class WP_Incident_Sweeper {
                             サイト内の全コンテンツ（公開・下書き・ゴミ箱）およびユーザーを一括クロールし、不正な痕跡を特定・安全に駆除します。
                         <?php endif; ?>
                     </p>
+                    <?php if ( is_multisite() && ! $is_network ) : ?>
+                    <div style="margin-top:10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:8px 12px;font-size:12px;color:#0369a1;">
+                        ℹ️ <strong>サブサイト個別モード:</strong> 現在のサイト（<?php bloginfo( 'name' ); ?>）のみを対象にスキャンしています。全傘下サイトを一括横断スキャンする場合は、<a href="<?php echo esc_url( network_admin_url( 'admin.php?page=wp-incident-sweeper' ) ); ?>" style="color:#0284c7;font-weight:bold;text-decoration:underline;">サイトネットワーク管理のスイーパー</a> をご利用ください。
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div class="wpis-actions">
                     <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-csv">
@@ -650,7 +680,7 @@ class WP_Incident_Sweeper {
 
             <!-- Metrics Summary Cards -->
             <div class="wpis-metrics">
-                <?php if ( is_multisite() ) : ?>
+                <?php if ( $is_network ) : ?>
                 <div class="wpis-metric-card is-primary">
                     <div class="wpis-metric-label">スキャン対象サイト数</div>
                     <div class="wpis-metric-val" id="wpis-metric-total-sites">-</div>
@@ -688,7 +718,7 @@ class WP_Incident_Sweeper {
                 </button>
                 <button type="button" class="wpis-tab-btn" data-tab="guide">
                     <span class="dashicons dashicons-info" style="font-size:18px;width:18px;height:18px;"></span>
-                    巡回ガイド＆マルチサイト運用
+                    <?php echo $is_network ? '巡回ガイド＆マルチサイト運用' : '巡回チェックガイド＆安全ガード仕様'; ?>
                 </button>
             </div>
 
@@ -696,7 +726,7 @@ class WP_Incident_Sweeper {
             <div class="wpis-panel is-active" id="wpis-panel-posts">
                 <div class="wpis-table-toolbar">
                     <div class="wpis-filter-group">
-                        <?php if ( is_multisite() ) : ?>
+                        <?php if ( $is_network ) : ?>
                         <select class="wpis-filter-select" id="wpis-posts-site-filter">
                             <option value="all">全傘下サイト</option>
                         </select>
@@ -728,7 +758,7 @@ class WP_Incident_Sweeper {
                             <tr>
                                 <th style="width:36px;text-align:center;"><input type="checkbox" id="wpis-posts-check-all"></th>
                                 <th style="width:130px;">判定</th>
-                                <?php if ( is_multisite() ) : ?><th style="width:140px;">対象サイト</th><?php endif; ?>
+                                <?php if ( $is_network ) : ?><th style="width:140px;">対象サイト</th><?php endif; ?>
                                 <th>タイトル</th>
                                 <th style="width:90px;">タイプ</th>
                                 <th style="width:80px;">状態</th>
@@ -738,7 +768,7 @@ class WP_Incident_Sweeper {
                             </tr>
                         </thead>
                         <tbody id="wpis-posts-tbody">
-                            <tr><td colspan="<?php echo is_multisite() ? '9' : '8'; ?>" class="wpis-empty-state">スキャン準備中...</td></tr>
+                            <tr><td colspan="<?php echo $is_network ? '9' : '8'; ?>" class="wpis-empty-state">スキャン準備中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -749,13 +779,21 @@ class WP_Incident_Sweeper {
                 <div class="wpis-table-toolbar">
                     <div class="wpis-filter-group">
                         <span style="font-size:13px;color:#64748b;">
-                            🛡️ <strong>マルチサイト安全保護:</strong> ネットワーク管理画面から不審ユーザーを削除すると、全傘下サイトに散らばった不正下書きが一括完全削除され、公開中の正規記事は安全に保護されます。
+                            <?php if ( is_multisite() && ! $is_network ) : ?>
+                                ℹ️ <strong>ユーザー監査（閲覧のみ）:</strong> マルチサイト構成では、ユーザーの完全削除はサイトネットワーク管理者（特権管理者）画面（<a href="<?php echo esc_url( network_admin_url( 'admin.php?page=wp-incident-sweeper' ) ); ?>" style="color:#0284c7;font-weight:bold;text-decoration:underline;">/wp-admin/network/</a>）からのみ実行可能です。
+                            <?php elseif ( $is_network ) : ?>
+                                🛡️ <strong>マルチサイト安全保護:</strong> ネットワーク管理画面から不審ユーザーを削除すると、全傘下サイトに散らばった不正下書きが一括完全削除され、公開中の正規記事は安全に保護されます。
+                            <?php else : ?>
+                                🛡️ <strong>安全保護機能:</strong> 不審ユーザー削除時、下書き等の不正記事のみ消去され、公開中の正規記事は現在の管理者に安全に引き継がれます。
+                            <?php endif; ?>
                         </span>
                     </div>
                     <div class="wpis-bulk-actions">
+                        <?php if ( ! ( is_multisite() && ! $is_network ) ) : ?>
                         <button type="button" class="wpis-btn wpis-btn-danger wpis-btn-sm" id="wpis-btn-delete-users" disabled>
                             選択した不審ユーザーを削除
                         </button>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -782,14 +820,30 @@ class WP_Incident_Sweeper {
             <!-- Panel: Guide -->
             <div class="wpis-panel" id="wpis-panel-guide">
                 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:24px;line-height:1.7;">
-                    <h2 style="font-size:16px;margin-top:0;">🌐 マルチサイト（サイトネットワーク）での運用手順</h2>
-                    <ol style="padding-left:20px;font-size:13px;color:#334155;">
-                        <li><strong>ネットワーク有効化:</strong> サイトネットワーク管理者画面（<code>/wp-admin/network/plugins.php</code>）にて「ネットワークで有効化」します。</li>
-                        <li><strong>ネットワーク管理からスキャン:</strong> ネットワーク管理の左メニュー「巡回スイーパー (全傘下サイト)」を開いてスキャンを実行すると、<strong>配下にあるすべての子サイトを全自動で巡回クロール</strong>します。</li>
-                        <li><strong>サイト別フィルター:</strong> 投稿一覧では、特定の子サイトだけに絞り込んで確認することも可能です。</li>
-                        <li><strong>一括駆除:</strong> 危険なアイテムをチェックして完全削除すると、該当する子サイトのDBに対して安全に処理が実行されます。</li>
-                        <li><strong>単体サブサイトでの実行も可能:</strong> 通常の各サブサイト管理画面（<code>/wp-admin/</code>）でも、そのサイト単独のスイーパーとして利用できます。</li>
-                    </ol>
+                    <?php if ( $is_network ) : ?>
+                        <h2 style="font-size:16px;margin-top:0;">🌐 マルチサイト（サイトネットワーク）での運用手順</h2>
+                        <ol style="padding-left:20px;font-size:13px;color:#334155;">
+                            <li><strong>全傘下サイトの一括横断スキャン:</strong> 「全サイト横断スキャン実行」を押すと、配下のすべての子サイトを全自動で巡回クロールします。</li>
+                            <li><strong>サイト別フィルター:</strong> 投稿一覧上部の「全傘下サイト」から特定の子サイトに絞り込んで確認できます。</li>
+                            <li><strong>一括駆除:</strong> 危険なアイテムをチェックして削除すると、該当する子サイトのDBを特定して安全に消去されます。</li>
+                        </ol>
+                    <?php else : ?>
+                        <h2 style="font-size:16px;margin-top:0;">🛡️ 巡回時の確認ポイントと運用手順</h2>
+                        <ol style="padding-left:20px;font-size:13px;color:#334155;">
+                            <li><strong>自動スキャン:</strong> 画面を開くとサイト内の全コンテンツとユーザーが自動でクロールされます。</li>
+                            <li><strong>危険項目を一括選択:</strong> 改ざん記事（<code>Hacked by...</code>）や不審ユーザー作成記事があれば、ボタン1つで一括チェックが入ります。</li>
+                            <li><strong>一括完全削除:</strong> 「選択した項目を完全削除」を押せば、ゴミ箱を経由せず一発で消去されます（通常記事はゴミ箱へ退避可能）。</li>
+                        </ol>
+                    <?php endif; ?>
+
+                    <h3 style="font-size:15px;margin-top:24px;">🛡️ 巻き込み事故を防止する「5つの多重安全ガード」</h3>
+                    <ul style="padding-left:20px;font-size:13px;color:#334155;">
+                        <li><strong>ガード1（システム重要ページの完全保護）：</strong> トップページ、ブログ一覧、プライバシーポリシーページは削除対象から強制除外。</li>
+                        <li><strong>ガード2（許可された投稿タイプのみ対象）：</strong> 投稿、固定ページ、公開カスタム投稿タイプのみが対象。画像実体やメニューは保護。</li>
+                        <li><strong>ガード3（公開中記事の誤完全削除ブロック）：</strong> 公開中の通常記事は完全削除を拒否し、ゴミ箱へ安全退避。</li>
+                        <li><strong>ガード4（公開記事の所有権安全移譲）：</strong> 不審ユーザー削除時、下書き等の不正記事のみ消去され、公開中記事は現在管理者に引き継ぎ。</li>
+                        <li><strong>ガード5（自身・初期管理者の保護）：</strong> ログイン中管理者およびID: 1 のアカウントは削除不可。</li>
+                    </ul>
                 </div>
             </div>
         </div>
