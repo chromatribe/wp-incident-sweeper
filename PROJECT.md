@@ -1,16 +1,24 @@
 # WP Incident Sweeper — プロジェクト定義
 
-**Current Version:** `2.20261015.12`
+**Current Version:** `2.20261015.13`
 
 ## 1. 概要
 WordPressサイト内の全コンテンツ（公開・下書き・ゴミ箱・非公開）および登録ユーザーを瞬時に一括スキャンし、改ざん痕跡（`Hacked by...`、`wp2_*` 等）を自動判定・安全に一括駆除する緊急セキュリティ・巡回ツール。マルチサイト（サイトネットワーク管理）環境にも完全対応し、傘下の全子サイトを横断スキャン可能。
 
 ## 2. バージョン体系（Qlypx方式）
 - 正本: `PROJECT.md` の `**Current Version:**`
-- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.12`）
+- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.13`）
 - 同期検証: `python3 scripts/check_version_sync.py`
 
 ## 3. Change Log
+
+### 2.20261015.13
+- **見出し追従（Sticky Header）& 検知理由列の100%幅・折返し防御:**
+  - テーブルラッパー（`.wpis-table-wrap`）を独立スクロールコンテナ化（`overflow: auto; max-height: calc(100vh - 250px)`）し、`thead th` に `position: sticky; top: 0; z-index: 20;` を適用。縦スクロール時にも列見出し（判定・タイトル・作成者・検知理由等）が常に追従。
+  - ダッシュボードの固定幅（1300px）を解除し、`max-width: 100%; margin-right: 20px;` でWordPress管理画面の横幅をフル活用。
+  - 検知理由列に十分な表示幅（`min-width: 240px;`）を配分。
+  - 理由ピルバッジ（`.wpis-reason-pill`）に `white-space: nowrap; flex-shrink: 0;` を徹底適用し、文字が縦1列に圧縮改行される現象を完全根絶。
+  - 総合テストスイートに `test_sticky_header_and_spacious_table_layout` を追加。
 
 ### 2.20261015.12
 - **全ソースコードからの絵文字完全撤廃（Zero-Emoji Architecture）:**
