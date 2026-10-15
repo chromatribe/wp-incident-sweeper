@@ -124,7 +124,7 @@ class WP_Incident_Sweeper {
         add_action( 'wp_ajax_wpis_sync_signatures', array( $this, 'ajax_sync_signatures' ) );
     }
 
-    const REMOTE_SIGNATURES_URL = 'https://raw.githubusercontent.com/chromatribe/wp-incident-sweeper/master/signatures.json';
+    const REMOTE_SIGNATURES_URL = 'https://raw.githubusercontent.com/chromatribe/wp-incident-sweeper/main/signatures.json';
 
     public function get_signatures() {
         $cached = get_site_option( 'wpis_signatures', null );
