@@ -24,7 +24,7 @@ git commit -am "chore: prepare release files" || true
 
 # Switch to main and pull latest distribution files
 git checkout main
-git checkout develop -- wp-incident-sweeper.zip signatures.json README.md PROJECT.md version.json docs spec
+git checkout develop -- wp-incident-sweeper.zip signatures.json README.md PROJECT.md AGENTS.md version.json docs spec
 git commit -am "chore: release update to distribution files" || true
 git push origin main
 
