@@ -245,27 +245,29 @@ def test_i18n_l10n_readiness(php_text: str, js_text: str):
     assert "load_plugin_textdomain" in php_text, "Plugin must call load_plugin_textdomain"
     assert "load_textdomain" in php_text, "Plugin must have load_textdomain method"
 
-    # 3. 言語ファイル実体の存在
+    # 3. 言語ファイル実体の存在（ja, en_US, id_ID, es_ES, de_DE）
     lang_dir = ROOT / "wp-incident-sweeper" / "languages"
     pot_file = lang_dir / "wp-incident-sweeper.pot"
-    po_file = lang_dir / "wp-incident-sweeper-ja.po"
-    mo_file = lang_dir / "wp-incident-sweeper-ja.mo"
-
     assert pot_file.is_file(), "POT template file must exist"
-    assert po_file.is_file(), "Japanese PO translation file must exist"
-    assert mo_file.is_file(), "Compiled MO binary file must exist"
 
-    # 4. MO バイナリのマジックナンバー検証 (GNU gettext magic bytes)
-    mo_bytes = mo_file.read_bytes()
-    assert len(mo_bytes) > 500, "MO binary must be populated"
-    magic = mo_bytes[:4]
-    assert magic in (b"\xde\x12\x04\x95", b"\x95\x04\x12\xde"), f"Invalid gettext magic bytes: {magic.hex()}"
+    target_locales = ["ja", "en_US", "id_ID", "es_ES", "de_DE"]
+    for loc in target_locales:
+        po_file = lang_dir / f"wp-incident-sweeper-{loc}.po"
+        mo_file = lang_dir / f"wp-incident-sweeper-{loc}.mo"
+        assert po_file.is_file(), f"PO translation file for {loc} must exist"
+        assert mo_file.is_file(), f"Compiled MO binary file for {loc} must exist"
+
+        # 4. MO バイナリのマジックナンバー検証 (GNU gettext magic bytes)
+        mo_bytes = mo_file.read_bytes()
+        assert len(mo_bytes) > 500, f"MO binary for {loc} must be populated"
+        magic = mo_bytes[:4]
+        assert magic in (b"\xde\x12\x04\x95", b"\x95\x04\x12\xde"), f"Invalid gettext magic bytes for {loc}: {magic.hex()}"
 
     # 5. JS 側のローカライゼーション
     assert "'i18n'        => array(" in php_text, "PHP enqueue_assets must supply i18n dictionary"
     assert "function __(key, fallback)" in js_text, "admin.js must implement __() i18n helper"
     assert "function sprintf(format, ...args)" in js_text, "admin.js must implement sprintf helper"
-    print("  [PASS] Internationalization (i18n/l10n) catalogs and gettext MO verified")
+    print(f"  [PASS] Internationalization (i18n/l10n) catalogs ({', '.join(target_locales)}) and gettext MO verified")
 
 
 def test_compliance_and_privacy(php_text: str):

@@ -1,0 +1,177 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP Incident Sweeper 2.20261015.10\n"
+"Report-Msgid-Bugs-To: https://chromatri.be\n"
+"POT-Creation-Date: 2026-10-15 19:00+0900\n"
+"PO-Revision-Date: 2026-10-15 19:00+0900\n"
+"Last-Translator: CHROMATRIBE <info@chromatri.be>\n"
+"Language-Team: Indonesian <info@chromatri.be>\n"
+"Language: id_ID\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Python build_languages.py\n"
+
+msgid "WP Incident Sweeper はサイト内のセキュリティ維持およびインシデント発生時の復旧支援ツールです。以下の文面は、サイト管理者がプライバシーポリシーに追加・調整できる参考テンプレートです。"
+msgstr "WP Incident Sweeper adalah alat untuk menjaga keamanan situs dan membantu pemulihan saat terjadi insiden keamanan. Teks di bawah ini adalah templat referensi yang dapat disesuaikan dan ditambahkan oleh administrator ke Kebijakan Privasi situs."
+
+msgid "セキュリティ監査および脅威検知"
+msgstr "Audit Keamanan & Deteksi Ancaman"
+
+msgid "当サイトでは、不正な改ざんやスパム投稿、不正アクセスの兆候を検知・監視するため、管理ツール（WP Incident Sweeper）を使用しています。本ツールによるコンテンツおよびアカウントの照合処理はすべて当サイトのサーバー内部で完結しており、投稿本文や利用者の個人データが外部第三者へ送信・共有されることはありません。"
+msgstr "Situs ini menggunakan alat administratif (WP Incident Sweeper) untuk mendeteksi dan memantau tanda-tanda manipulasi tidak sah, kiriman spam, dan akses ilegal. Semua proses verifikasi konten dan akun dilakukan sepenuhnya di dalam server situs kami; tidak ada isi postingan atau data pribadi pengguna yang dikirim atau dibagikan ke pihak ketiga."
+
+msgid "シグネチャ更新に伴う外部通信（電気通信事業法外部送信規律への対応）"
+msgstr "Komunikasi Eksternal untuk Pembaruan Tanda Tangan Ancaman"
+
+msgid "脅威シグネチャ（既知の改ざん文字列や悪性ドメイン一覧）の最新化のため、当サイト管理者はGitHubサーバー（raw.githubusercontent.com）からシグネチャ定義ファイルを取得することがあります。この通信において送信される情報はHTTP接続に必要な標準的情報（IPアドレス、User-Agent）に限られ、サイト利用者や投稿内容等のデータは一切含まれません。"
+msgstr "Untuk memperbarui tanda tangan ancaman (daftar kata kunci defacement dan domain berbahaya yang diketahui), administrator situs dapat mengunduh berkas definisi tanda tangan dari server GitHub (raw.githubusercontent.com). Informasi yang dikirimkan dalam koneksi ini terbatas pada parameter koneksi HTTP standar (alamat IP, User-Agent), dan sama sekali tidak mencakup data pengguna situs atau konten postingan."
+
+msgid "WP Incident Sweeper"
+msgstr "WP Incident Sweeper"
+
+msgid "WP Incident Sweeper マイKW設定"
+msgstr "Pengaturan Kata Kunci Kustom WP Incident Sweeper"
+
+msgid "WP Incident Sweeper 設定"
+msgstr "Pengaturan WP Incident Sweeper"
+
+msgid "マイKW（個別検知キーワード）"
+msgstr "Kata Kunci Kustom (Deteksi Mandiri)"
+
+msgid "インシデント巡回スイーパー"
+msgstr "Patroli Incident Sweeper"
+
+msgid "巡回スイーパー"
+msgstr "Incident Sweeper"
+
+msgid "インシデント巡回スイーパー（ネットワーク全体）"
+msgstr "Patroli Incident Sweeper (Seluruh Jaringan)"
+
+msgid "巡回スイーパー(全傘下サイト)"
+msgstr "Incident Sweeper (Semua Situs Jaringan)"
+
+msgid "スキャン中..."
+msgstr "Memindai..."
+
+msgid "全傘下サイトを巡回クロール中..."
+msgstr "Merayapi seluruh situs jaringan..."
+
+msgid "再スキャン実行"
+msgstr "Jalankan Pindai Ulang"
+
+msgid "全サイト横断スキャン実行"
+msgstr "Jalankan Pemindaian Lintas Situs"
+
+msgid "サイト内を高速クロール中（全投稿・固定ページ・ユーザー）..."
+msgstr "Merayapi konten situs dengan cepat (pos, laman, dan pengguna)..."
+
+msgid "全傘下サイトの全コンテンツ・ユーザーを横断クロール中..."
+msgstr "Merayapi seluruh konten dan pengguna di semua situs jaringan..."
+
+msgid "ユーザーをスキャン中..."
+msgstr "Memindai pengguna..."
+
+msgid "該当するコンテンツはありません（安全です）"
+msgstr "Tidak ada konten mencurigakan yang ditemukan (Aman)"
+
+msgid "ユーザーはいません"
+msgstr "Tidak ada pengguna mencurigakan"
+
+msgid "正常"
+msgstr "Normal"
+
+msgid "🚨 危険（即削除推奨）"
+msgstr "🚨 Kritis (Disarankan Segera Dihapus)"
+
+msgid "⚠️ 警告（要確認）"
+msgstr "⚠️ Peringatan (Perlu Ditinjau)"
+
+msgid "ℹ️ 下書き/ゴミ箱"
+msgstr "ℹ️ Draf / Tong Sampah"
+
+msgid "🚨 不審（即削除推奨）"
+msgstr "🚨 Mencurigakan (Disarankan Segera Dihapus)"
+
+msgid "トップページ"
+msgstr "Halaman Depan"
+
+msgid "投稿一覧ページ"
+msgstr "Halaman Pos"
+
+msgid "プライバシーポリシー"
+msgstr "Kebijakan Privasi"
+
+msgid "システム重要ページのため削除保護"
+msgstr "Halaman sistem penting (Dilindungi dari penghapusan)"
+
+msgid "表示"
+msgstr "Lihat"
+
+msgid "編集"
+msgstr "Sunting"
+
+msgid "【安全確認: 記事の完全削除】\\n選択された %d 件のコンテンツをデータベースから【完全に消去】します。\\n\\n※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\\n\\n本当に実行しますか？"
+msgstr "【安全確認: 記事の完全削除】\\n選択された %d 件のコンテンツをデータベースから【完全に消去】します。\\n\\n※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\\n\\n本当に実行しますか？"
+
+msgid "【確認: ゴミ箱への移動】\\n選択された %d 件のコンテンツをゴミ箱へ移動します。\\n（後から復元可能です）\\n\\n実行しますか？"
+msgstr "【確認: ゴミ箱への移動】\\n選択された %d 件のコンテンツをゴミ箱へ移動します。\\n（後から復元可能です）\\n\\n実行しますか？"
+
+msgid "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n🛡️ 巻き込み防止ガード:\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
+msgstr "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n🛡️ 巻き込み防止ガード:\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
+
+msgid "選択した%d名の不審ユーザーを削除"
+msgstr "Hapus %d pengguna mencurigakan yang dipilih"
+
+msgid "選択した不審ユーザーを削除"
+msgstr "Hapus pengguna mencurigakan yang dipilih"
+
+msgid "エクスポートするスキャンデータがありません。先にスキャンを実行してください。"
+msgstr "Tidak ada data pindaian untuk diekspor. Silakan jalankan pemindaian terlebih dahulu."
+
+msgid "同期中..."
+msgstr "Menyinkronkan..."
+
+msgid "保存中..."
+msgstr "Menyimpan..."
+
+msgid "マイKWを保存しました！"
+msgstr "Kata kunci kustom berhasil disimpan!"
+
+msgid "🎯 マイKW検知"
+msgstr "🎯 Cocok Kata Kunci Kustom"
+
+msgid "%d サイト"
+msgstr "%d situs"
+
+msgid "%d 件のコンテンツを処理しました。\\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）"
+msgstr "%d 件のコンテンツを処理しました。\\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）"
+
+msgid "%d 名のユーザーの削除が完了しました。"
+msgstr "Berhasil menghapus %d pengguna."
+
+msgid "\\n（※正規ユーザーや自身のアカウント %d 名は安全のため自動スキップされました）"
+msgstr "\\n（※正規ユーザーや自身のアカウント %d 名は安全のため自動スキップされました）"
+
+msgid "法令・規約・プライバシー"
+msgstr "Hukum, Ketentuan & Privasi"
+
+msgid "法令遵守（コンプライアンス）・プライバシー・利用規約"
+msgstr "Kepatuhan Hukum, Privasi & Syarat Penggunaan"
+
+msgid "WP Incident Sweeper は、各種法令（電気通信事業法、個人情報保護法、不正アクセス禁止法等）およびWordPress標準プライバシーAPIに完全準拠して設計されています。"
+msgstr "WP Incident Sweeper dirancang untuk sepenuhnya mematuhi kerangka regulasi privasi, undang-undang keamanan siber, dan API Privasi standar WordPress."
+
+msgid "電気通信事業法（外部送信規律）への対応"
+msgstr "Keterbukaan Transmisi Eksternal Data"
+
+msgid "個人情報保護法 (APPI) & GDPR 対応"
+msgstr "Kepatuhan Perlindungan Data (APPI & GDPR)"
+
+msgid "不正アクセス禁止法遵守 & 利用許諾条項"
+msgstr "Kepatuhan UU Keamanan Siber & Ketentuan Lisensi"
+
+msgid "免責事項 (Limitation of Liability) & バックアップ義務"
+msgstr "Batasan Tanggung Jawab & Kewajiban Pencadangan"
+

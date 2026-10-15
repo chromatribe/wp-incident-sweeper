@@ -1,0 +1,177 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP Incident Sweeper 2.20261015.10\n"
+"Report-Msgid-Bugs-To: https://chromatri.be\n"
+"POT-Creation-Date: 2026-10-15 19:00+0900\n"
+"PO-Revision-Date: 2026-10-15 19:00+0900\n"
+"Last-Translator: CHROMATRIBE <info@chromatri.be>\n"
+"Language-Team: English <info@chromatri.be>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Python build_languages.py\n"
+
+msgid "WP Incident Sweeper はサイト内のセキュリティ維持およびインシデント発生時の復旧支援ツールです。以下の文面は、サイト管理者がプライバシーポリシーに追加・調整できる参考テンプレートです。"
+msgstr "WP Incident Sweeper is a tool for maintaining site security and supporting recovery during security incidents. The text below is a reference template that site administrators can adapt and include in their Privacy Policy."
+
+msgid "セキュリティ監査および脅威検知"
+msgstr "Security Audit & Threat Detection"
+
+msgid "当サイトでは、不正な改ざんやスパム投稿、不正アクセスの兆候を検知・監視するため、管理ツール（WP Incident Sweeper）を使用しています。本ツールによるコンテンツおよびアカウントの照合処理はすべて当サイトのサーバー内部で完結しており、投稿本文や利用者の個人データが外部第三者へ送信・共有されることはありません。"
+msgstr "This site uses the WP Incident Sweeper administrative tool to detect and monitor signs of unauthorized tampering, spam posts, and illicit access. All content and account verification performed by this tool is executed entirely on our own server; no post content or personal data of users is ever transmitted or shared with external third parties."
+
+msgid "シグネチャ更新に伴う外部通信（電気通信事業法外部送信規律への対応）"
+msgstr "External Communication for Threat Signature Updates"
+
+msgid "脅威シグネチャ（既知の改ざん文字列や悪性ドメイン一覧）の最新化のため、当サイト管理者はGitHubサーバー（raw.githubusercontent.com）からシグネチャ定義ファイルを取得することがあります。この通信において送信される情報はHTTP接続に必要な標準的情報（IPアドレス、User-Agent）に限られ、サイト利用者や投稿内容等のデータは一切含まれません。"
+msgstr "To keep threat signatures (lists of known defacement strings and malicious domains) up to date, the site administrator may retrieve signature definition files from GitHub (raw.githubusercontent.com). The information transmitted during this communication is limited strictly to standard HTTP connection parameters (IP address, User-Agent), and contains no site user data or post content whatsoever."
+
+msgid "WP Incident Sweeper"
+msgstr "WP Incident Sweeper"
+
+msgid "WP Incident Sweeper マイKW設定"
+msgstr "WP Incident Sweeper Custom Keywords Settings"
+
+msgid "WP Incident Sweeper 設定"
+msgstr "WP Incident Sweeper Settings"
+
+msgid "マイKW（個別検知キーワード）"
+msgstr "Custom Keywords (User Signatures)"
+
+msgid "インシデント巡回スイーパー"
+msgstr "Incident Sweeper Patrol"
+
+msgid "巡回スイーパー"
+msgstr "Incident Sweeper"
+
+msgid "インシデント巡回スイーパー（ネットワーク全体）"
+msgstr "Incident Sweeper Patrol (Network-Wide)"
+
+msgid "巡回スイーパー(全傘下サイト)"
+msgstr "Incident Sweeper (All Network Sites)"
+
+msgid "スキャン中..."
+msgstr "Scanning..."
+
+msgid "全傘下サイトを巡回クロール中..."
+msgstr "Crawling all network sites..."
+
+msgid "再スキャン実行"
+msgstr "Run Re-scan"
+
+msgid "全サイト横断スキャン実行"
+msgstr "Run Cross-Site Scan"
+
+msgid "サイト内を高速クロール中（全投稿・固定ページ・ユーザー）..."
+msgstr "Fast-crawling site content (posts, pages, and users)..."
+
+msgid "全傘下サイトの全コンテンツ・ユーザーを横断クロール中..."
+msgstr "Cross-crawling all contents and users across all network sites..."
+
+msgid "ユーザーをスキャン中..."
+msgstr "Scanning users..."
+
+msgid "該当するコンテンツはありません（安全です）"
+msgstr "No matching content found (Clean & Safe)"
+
+msgid "ユーザーはいません"
+msgstr "No suspicious users found"
+
+msgid "正常"
+msgstr "Normal"
+
+msgid "🚨 危険（即削除推奨）"
+msgstr "🚨 Critical (Immediate Deletion Recommended)"
+
+msgid "⚠️ 警告（要確認）"
+msgstr "⚠️ Warning (Review Required)"
+
+msgid "ℹ️ 下書き/ゴミ箱"
+msgstr "ℹ️ Draft / Trash"
+
+msgid "🚨 不審（即削除推奨）"
+msgstr "🚨 Suspicious (Immediate Deletion Recommended)"
+
+msgid "トップページ"
+msgstr "Front Page"
+
+msgid "投稿一覧ページ"
+msgstr "Posts Page"
+
+msgid "プライバシーポリシー"
+msgstr "Privacy Policy"
+
+msgid "システム重要ページのため削除保護"
+msgstr "Protected system page (Deletion locked)"
+
+msgid "表示"
+msgstr "View"
+
+msgid "編集"
+msgstr "Edit"
+
+msgid "【安全確認: 記事の完全削除】\\n選択された %d 件のコンテンツをデータベースから【完全に消去】します。\\n\\n※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\\n\\n本当に実行しますか？"
+msgstr "【安全確認: 記事の完全削除】\\n選択された %d 件のコンテンツをデータベースから【完全に消去】します。\\n\\n※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\\n\\n本当に実行しますか？"
+
+msgid "【確認: ゴミ箱への移動】\\n選択された %d 件のコンテンツをゴミ箱へ移動します。\\n（後から復元可能です）\\n\\n実行しますか？"
+msgstr "【確認: ゴミ箱への移動】\\n選択された %d 件のコンテンツをゴミ箱へ移動します。\\n（後から復元可能です）\\n\\n実行しますか？"
+
+msgid "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n🛡️ 巻き込み防止ガード:\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
+msgstr "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n🛡️ 巻き込み防止ガード:\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
+
+msgid "選択した%d名の不審ユーザーを削除"
+msgstr "Delete %d selected suspicious user(s)"
+
+msgid "選択した不審ユーザーを削除"
+msgstr "Delete selected suspicious users"
+
+msgid "エクスポートするスキャンデータがありません。先にスキャンを実行してください。"
+msgstr "No scan data to export. Please run a scan first."
+
+msgid "同期中..."
+msgstr "Syncing..."
+
+msgid "保存中..."
+msgstr "Saving..."
+
+msgid "マイKWを保存しました！"
+msgstr "Custom keywords saved successfully!"
+
+msgid "🎯 マイKW検知"
+msgstr "🎯 Custom Keyword Match"
+
+msgid "%d サイト"
+msgstr "%d site(s)"
+
+msgid "%d 件のコンテンツを処理しました。\\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）"
+msgstr "%d 件のコンテンツを処理しました。\\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）"
+
+msgid "%d 名のユーザーの削除が完了しました。"
+msgstr "Successfully deleted %d user(s)."
+
+msgid "\\n（※正規ユーザーや自身のアカウント %d 名は安全のため自動スキップされました）"
+msgstr "\\n（※正規ユーザーや自身のアカウント %d 名は安全のため自動スキップされました）"
+
+msgid "法令・規約・プライバシー"
+msgstr "Legal, Terms & Privacy"
+
+msgid "法令遵守（コンプライアンス）・プライバシー・利用規約"
+msgstr "Compliance, Privacy & Terms of Use"
+
+msgid "WP Incident Sweeper は、各種法令（電気通信事業法、個人情報保護法、不正アクセス禁止法等）およびWordPress標準プライバシーAPIに完全準拠して設計されています。"
+msgstr "WP Incident Sweeper is designed to be fully compliant with global privacy frameworks, cybersecurity laws, and standard WordPress Privacy APIs."
+
+msgid "電気通信事業法（外部送信規律）への対応"
+msgstr "External Transmission Regulation Disclosure"
+
+msgid "個人情報保護法 (APPI) & GDPR 対応"
+msgstr "Data Protection (APPI & GDPR) Compliance"
+
+msgid "不正アクセス禁止法遵守 & 利用許諾条項"
+msgstr "Cybersecurity Act Compliance & License Terms"
+
+msgid "免責事項 (Limitation of Liability) & バックアップ義務"
+msgstr "Limitation of Liability & Prerequisite Backup Obligation"
+

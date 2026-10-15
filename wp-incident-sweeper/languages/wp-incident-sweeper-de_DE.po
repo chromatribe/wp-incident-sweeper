@@ -1,0 +1,177 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP Incident Sweeper 2.20261015.10\n"
+"Report-Msgid-Bugs-To: https://chromatri.be\n"
+"POT-Creation-Date: 2026-10-15 19:00+0900\n"
+"PO-Revision-Date: 2026-10-15 19:00+0900\n"
+"Last-Translator: CHROMATRIBE <info@chromatri.be>\n"
+"Language-Team: German <info@chromatri.be>\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Python build_languages.py\n"
+
+msgid "WP Incident Sweeper はサイト内のセキュリティ維持およびインシデント発生時の復旧支援ツールです。以下の文面は、サイト管理者がプライバシーポリシーに追加・調整できる参考テンプレートです。"
+msgstr "WP Incident Sweeper ist ein Tool zur Aufrechterhaltung der Websitesicherheit und zur Unterstützung bei der Wiederherstellung nach Sicherheitsvorfällen. Der folgende Text dient als Vorlage, die Website-Administratoren in ihre Datenschutzerklärung übernehmen und anpassen können."
+
+msgid "セキュリティ監査および脅威検知"
+msgstr "Sicherheitsaudit und Bedrohungserkennung"
+
+msgid "当サイトでは、不正な改ざんやスパム投稿、不正アクセスの兆候を検知・監視するため、管理ツール（WP Incident Sweeper）を使用しています。本ツールによるコンテンツおよびアカウントの照合処理はすべて当サイトのサーバー内部で完結しており、投稿本文や利用者の個人データが外部第三者へ送信・共有されることはありません。"
+msgstr "Diese Website verwendet das Verwaltungstool WP Incident Sweeper zur Erkennung und Überwachung von Anzeichen unbefugter Manipulationen, Spam-Beiträgen und unberechtigtem Zugriff. Sämtliche Inhalts- und Kontenabgleiche durch dieses Tool erfolgen vollständig lokal auf unserem Server; es werden keinerlei Beitragsinhalte oder personenbezogene Daten der Nutzer an externe Dritte übertragen oder weitergegeben."
+
+msgid "シグネチャ更新に伴う外部通信（電気通信事業法外部送信規律への対応）"
+msgstr "Externe Kommunikation für Signaturaktualisierungen"
+
+msgid "脅威シグネチャ（既知の改ざん文字列や悪性ドメイン一覧）の最新化のため、当サイト管理者はGitHubサーバー（raw.githubusercontent.com）からシグネチャ定義ファイルを取得することがあります。この通信において送信される情報はHTTP接続に必要な標準的情報（IPアドレス、User-Agent）に限られ、サイト利用者や投稿内容等のデータは一切含まれません。"
+msgstr "Zur Aktualisierung der Bedrohungssignaturen (Listen bekannter Manipulationszeichenfolgen und bösartiger Domains) kann der Website-Administrator Signaturdefinitionsdateien vom GitHub-Server (raw.githubusercontent.com) abrufen. Die bei dieser Kommunikation übermittelten Daten beschränken sich ausschließlich auf standardmäßige HTTP-Verbindungsdaten (IP-Adresse, User-Agent); Daten von Website-Nutzern oder Beitragsinhalte sind darin zu keinem Zeitpunkt enthalten."
+
+msgid "WP Incident Sweeper"
+msgstr "WP Incident Sweeper"
+
+msgid "WP Incident Sweeper マイKW設定"
+msgstr "WP Incident Sweeper Eigene Suchbegriffe Einstellungen"
+
+msgid "WP Incident Sweeper 設定"
+msgstr "WP Incident Sweeper Einstellungen"
+
+msgid "マイKW（個別検知キーワード）"
+msgstr "Eigene Suchbegriffe (Benutzerdefinierte Erkennung)"
+
+msgid "インシデント巡回スイーパー"
+msgstr "Vorfall-Patrouille (Incident Sweeper)"
+
+msgid "巡回スイーパー"
+msgstr "Incident Sweeper"
+
+msgid "インシデント巡回スイーパー（ネットワーク全体）"
+msgstr "Vorfall-Patrouille (Netzwerkweit)"
+
+msgid "巡回スイーパー(全傘下サイト)"
+msgstr "Incident Sweeper (Alle Netzwerk-Websites)"
+
+msgid "スキャン中..."
+msgstr "Scan läuft..."
+
+msgid "全傘下サイトを巡回クロール中..."
+msgstr "Alle Netzwerk-Websites werden durchsucht..."
+
+msgid "再スキャン実行"
+msgstr "Erneut scannen"
+
+msgid "全サイト横断スキャン実行"
+msgstr "Netzwerkweiten Scan ausführen"
+
+msgid "サイト内を高速クロール中（全投稿・固定ページ・ユーザー）..."
+msgstr "Schneller Website-Crawl läuft (Beiträge, Seiten und Benutzer)..."
+
+msgid "全傘下サイトの全コンテンツ・ユーザーを横断クロール中..."
+msgstr "Umfassender Crawl aller Inhalte und Benutzer über alle Netzwerk-Websites läuft..."
+
+msgid "ユーザーをスキャン中..."
+msgstr "Benutzer werden gescannt..."
+
+msgid "該当するコンテンツはありません（安全です）"
+msgstr "Keine verdächtigen Inhalte gefunden (Sicher)"
+
+msgid "ユーザーはいません"
+msgstr "Keine verdächtigen Benutzer gefunden"
+
+msgid "正常"
+msgstr "Normal"
+
+msgid "🚨 危険（即削除推奨）"
+msgstr "🚨 Kritisch (Sofortige Löschung empfohlen)"
+
+msgid "⚠️ 警告（要確認）"
+msgstr "⚠️ Warnung (Prüfung erforderlich)"
+
+msgid "ℹ️ 下書き/ゴミ箱"
+msgstr "ℹ️ Entwurf / Papierkorb"
+
+msgid "🚨 不審（即削除推奨）"
+msgstr "🚨 Verdächtig (Sofortige Löschung empfohlen)"
+
+msgid "トップページ"
+msgstr "Startseite"
+
+msgid "投稿一覧ページ"
+msgstr "Beitragsseite"
+
+msgid "プライバシーポリシー"
+msgstr "Datenschutzerklärung"
+
+msgid "システム重要ページのため削除保護"
+msgstr "Systemrelevante Seite (Löschschutz aktiv)"
+
+msgid "表示"
+msgstr "Ansehen"
+
+msgid "編集"
+msgstr "Bearbeiten"
+
+msgid "【安全確認: 記事の完全削除】\\n選択された %d 件のコンテンツをデータベースから【完全に消去】します。\\n\\n※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\\n\\n本当に実行しますか？"
+msgstr "【安全確認: 記事の完全削除】\\n選択された %d 件のコンテンツをデータベースから【完全に消去】します。\\n\\n※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\\n\\n本当に実行しますか？"
+
+msgid "【確認: ゴミ箱への移動】\\n選択された %d 件のコンテンツをゴミ箱へ移動します。\\n（後から復元可能です）\\n\\n実行しますか？"
+msgstr "【確認: ゴミ箱への移動】\\n選択された %d 件のコンテンツをゴミ箱へ移動します。\\n（後から復元可能です）\\n\\n実行しますか？"
+
+msgid "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n🛡️ 巻き込み防止ガード:\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
+msgstr "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n🛡️ 巻き込み防止ガード:\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
+
+msgid "選択した%d名の不審ユーザーを削除"
+msgstr "%d ausgewählte verdächtige Benutzer löschen"
+
+msgid "選択した不審ユーザーを削除"
+msgstr "Ausgewählte verdächtige Benutzer löschen"
+
+msgid "エクスポートするスキャンデータがありません。先にスキャンを実行してください。"
+msgstr "Keine Scandaten zum Exportieren vorhanden. Bitte führen Sie zuerst einen Scan durch."
+
+msgid "同期中..."
+msgstr "Synchronisiere..."
+
+msgid "保存中..."
+msgstr "Speichern..."
+
+msgid "マイKWを保存しました！"
+msgstr "Eigene Suchbegriffe erfolgreich gespeichert!"
+
+msgid "🎯 マイKW検知"
+msgstr "🎯 Eigener Suchbegriff Treffer"
+
+msgid "%d サイト"
+msgstr "%d Website(s)"
+
+msgid "%d 件のコンテンツを処理しました。\\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）"
+msgstr "%d 件のコンテンツを処理しました。\\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）"
+
+msgid "%d 名のユーザーの削除が完了しました。"
+msgstr "%d Benutzer erfolgreich gelöscht."
+
+msgid "\\n（※正規ユーザーや自身のアカウント %d 名は安全のため自動スキップされました）"
+msgstr "\\n（※正規ユーザーや自身のアカウント %d 名は安全のため自動スキップされました）"
+
+msgid "法令・規約・プライバシー"
+msgstr "Rechtliches, Nutzungsbedingungen & Datenschutz"
+
+msgid "法令遵守（コンプライアンス）・プライバシー・利用規約"
+msgstr "Compliance, Datenschutz & Nutzungsbedingungen"
+
+msgid "WP Incident Sweeper は、各種法令（電気通信事業法、個人情報保護法、不正アクセス禁止法等）およびWordPress標準プライバシーAPIに完全準拠して設計されています。"
+msgstr "WP Incident Sweeper wurde unter vollständiger Einhaltung der Datenschutzgesetze (DSGVO / APPI), IT-Sicherheitsgesetze und der Standard-WordPress-Datenschutz-APIs entwickelt."
+
+msgid "電気通信事業法（外部送信規律）への対応"
+msgstr "Transparenz bezüglich externer Datenübertragung"
+
+msgid "個人情報保護法 (APPI) & GDPR 対応"
+msgstr "Datenschutzkonformität (APPI & DSGVO)"
+
+msgid "不正アクセス禁止法遵守 & 利用許諾条項"
+msgstr "Einhaltung von IT-Sicherheitsgesetzen & Lizenzbedingungen"
+
+msgid "免責事項 (Limitation of Liability) & バックアップ義務"
+msgstr "Haftungsbeschränkung & Pflicht zur Datensicherung"
+
