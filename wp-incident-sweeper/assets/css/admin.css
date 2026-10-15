@@ -176,6 +176,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   background: var(--bg-card);
   padding: 12px 18px;
   border: 1px solid var(--border);
@@ -186,22 +188,38 @@
 .wpis-filter-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1 1 auto;
 }
 
-.wpis-filter-select, .wpis-search-input {
+.wpis-filter-select {
   padding: 6px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
   background: #fff;
   color: var(--text-main);
+  max-width: 240px;
+}
+
+.wpis-search-input {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--text-main);
+  min-width: 180px;
+  max-width: 260px;
 }
 
 .wpis-bulk-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* Data Table */
@@ -309,6 +327,9 @@
   border: 1px solid transparent;
   transition: all 0.15s ease;
   text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .wpis-btn-primary {
@@ -339,8 +360,10 @@
 }
 
 .wpis-btn-sm {
-  padding: 4px 10px;
+  padding: 6px 12px;
   font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 /* Reason tag */

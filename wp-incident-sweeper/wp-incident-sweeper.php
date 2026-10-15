@@ -3,7 +3,7 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。マルチサイト（サイトネットワーク管理）環境にも完全対応し、傘下の全子サイトを一括横断クロール・駆除できます。
- * Version: 2.20261015.1
+ * Version: 2.20261015.2
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -156,14 +156,14 @@ class WP_Incident_Sweeper {
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '2.20261015.1'
+            '2.20261015.2'
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '2.20261015.1',
+            '2.20261015.2',
             true
         );
 
