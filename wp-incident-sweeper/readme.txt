@@ -4,7 +4,7 @@ Tags: security, sweep, incident, cleanup, audit, multisite
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.20261015.5
+Stable tag: 2.20261015.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 

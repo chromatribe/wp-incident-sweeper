@@ -56,7 +56,7 @@ def test_php_bracket_integrity(php_text: str):
 def test_security_controls(php_text: str, js_text: str):
     """セキュリティ防御要件の点検"""
     # 1. Nonce 検証
-    endpoints = ["ajax_run_scan", "ajax_delete_posts", "ajax_delete_users"]
+    endpoints = ["ajax_run_scan", "ajax_delete_posts", "ajax_delete_users", "ajax_sync_signatures"]
     for ep in endpoints:
         ep_match = re.search(r"function\s+" + ep + r"\s*\(\)\s*\{([^}]+check_ajax_referer[^}]+)", php_text)
         assert ep_match, f"{ep} must perform check_ajax_referer at start"
@@ -138,6 +138,33 @@ def test_safety_guards(php_text: str):
     print("  [PASS] All 5 safety guards and anti-cascade defenses verified")
 
 
+def test_signature_engine(php_text: str, js_text: str):
+    """GitHubシグネチャ自動同期機能および検知理由UIの検証"""
+    import json
+    sig_file = ROOT / "signatures.json"
+    assert sig_file.is_file(), "signatures.json must exist at project root"
+
+    with open(sig_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    assert "version" in data, "signatures.json must have version"
+    assert len(data.get("threat_keywords_high", [])) >= 20, "High threat keywords must be defined"
+    assert len(data.get("threat_keywords_medium", [])) >= 30, "Medium threat keywords must be defined"
+    assert len(data.get("suspicious_email_domains", [])) >= 5, "Suspicious email domains must be defined"
+
+    # PHP側のシグネチャ同期実装
+    assert "REMOTE_SIGNATURES_URL" in php_text
+    assert "get_signatures" in php_text
+    assert "sync_remote_signatures" in php_text
+    assert "ajax_sync_signatures" in php_text
+
+    # JS側のシグネチャUIと検知理由バッジ
+    assert "updateSignatureDisplay" in js_text
+    assert "wpis-btn-sync-kw" in js_text
+    assert "wpis-title-reasons" in js_text
+    print("  [PASS] GitHub signature auto-sync & prominent reason badges verified")
+
+
 def test_js_execution():
     """Node.js を用いて admin.js の構文・未定義変数（ReferenceError等）を自動検証"""
     import subprocess
@@ -170,11 +197,12 @@ def test_js_execution():
               success: true,
               data: {
                 posts: [
-                  { id: 10, blog_id: 1, blog_name: 'Subsite 1', title: 'Test 1', slug: 'test1', post_type: 'post', status: 'publish', author_id: 1, author_name: 'Admin', modified_date: '2026-10-15', severity: 'clean', is_protected: false, reasons: [] }
+                  { id: 10, blog_id: 1, blog_name: 'Subsite 1', title: 'Test 1', slug: 'test1', post_type: 'post', status: 'publish', author_id: 1, author_name: 'Admin', modified_date: '2026-10-15', severity: 'clean', is_protected: false, reasons: ['🚨 本文改ざん痕跡: "hacked by"'] }
                 ],
                 users: [{ id: 1, login: 'admin', name: 'Admin', email: 'a@b.com', roles: ['administrator'], registered: '2026-10-15', is_threat: false, threat_reasons: [] }],
                 sites: [{ id: 1, name: 'Site 1', url: 'http://localhost' }],
-                summary: { totalSites: 1, totalPosts: 1, threatPosts: 0, totalUsers: 1, threatUsers: 0 }
+                signatures: { version: '2026.10.15.1', high_count: 23, med_count: 35, updated_at: '2026-10-15 17:40:00' },
+                summary: { totalSites: 1, totalPosts: 1, threatPosts: 1, totalUsers: 1, threatUsers: 0 }
               }
             })
           });
@@ -200,6 +228,7 @@ def main():
     test_security_controls(php_text, js_text)
     test_multisite_single_separation(php_text, js_text)
     test_safety_guards(php_text)
+    test_signature_engine(php_text, js_text)
     test_js_execution()
 
     print("\nALL TESTS PASSED! Plugin is strictly verified.")

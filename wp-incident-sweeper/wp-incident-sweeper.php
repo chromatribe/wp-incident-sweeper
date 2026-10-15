@@ -3,7 +3,7 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。単一サイトおよびマルチサイト（サイトネットワーク管理）の両方に完全対応し、コンテキストに応じてUIが自動最適化されます。
- * Version: 2.20261015.5
+ * Version: 2.20261015.6
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -121,6 +121,118 @@ class WP_Incident_Sweeper {
         add_action( 'wp_ajax_wpis_run_scan', array( $this, 'ajax_run_scan' ) );
         add_action( 'wp_ajax_wpis_delete_posts', array( $this, 'ajax_delete_posts' ) );
         add_action( 'wp_ajax_wpis_delete_users', array( $this, 'ajax_delete_users' ) );
+        add_action( 'wp_ajax_wpis_sync_signatures', array( $this, 'ajax_sync_signatures' ) );
+    }
+
+    const REMOTE_SIGNATURES_URL = 'https://raw.githubusercontent.com/chromatribe/wp-incident-sweeper/master/signatures.json';
+
+    public function get_signatures() {
+        $cached = get_site_option( 'wpis_signatures', null );
+        if ( is_array( $cached ) && ! empty( $cached['threat_keywords_high'] ) ) {
+            return array(
+                'threat_keywords_high'     => array_values( array_unique( array_merge( $this->threat_keywords_high, (array) $cached['threat_keywords_high'] ) ) ),
+                'threat_keywords_medium'   => array_values( array_unique( array_merge( $this->threat_keywords_medium, (array) $cached['threat_keywords_medium'] ) ) ),
+                'suspicious_email_domains' => array_values( array_unique( array_merge( $this->suspicious_email_domains, (array) $cached['suspicious_email_domains'] ) ) ),
+                'version'                  => isset( $cached['version'] ) ? $cached['version'] : 'builtin',
+                'updated_at'               => get_site_option( 'wpis_signatures_synced_at', '組み込み既定値' ),
+            );
+        }
+
+        return array(
+            'threat_keywords_high'     => $this->threat_keywords_high,
+            'threat_keywords_medium'   => $this->threat_keywords_medium,
+            'suspicious_email_domains' => $this->suspicious_email_domains,
+            'version'                  => 'builtin',
+            'updated_at'               => '組み込み既定値',
+        );
+    }
+
+    public function get_threat_keywords_high() {
+        $sig = $this->get_signatures();
+        return $sig['threat_keywords_high'];
+    }
+
+    public function get_threat_keywords_medium() {
+        $sig = $this->get_signatures();
+        return $sig['threat_keywords_medium'];
+    }
+
+    public function get_suspicious_email_domains() {
+        $sig = $this->get_signatures();
+        return $sig['suspicious_email_domains'];
+    }
+
+    public function sync_remote_signatures( $force = false ) {
+        if ( ! $force ) {
+            $last_checked = (int) get_site_option( 'wpis_signatures_last_checked', 0 );
+            if ( time() - $last_checked < 86400 ) {
+                return true;
+            }
+        }
+
+        update_site_option( 'wpis_signatures_last_checked', time() );
+
+        $response = wp_remote_get( self::REMOTE_SIGNATURES_URL, array(
+            'timeout'    => 10,
+            'sslverify'  => true,
+            'user-agent' => 'WP-Incident-Sweeper/' . '2.20261015.6',
+        ) );
+
+        if ( is_wp_error( $response ) ) {
+            return $response;
+        }
+
+        $code = wp_remote_retrieve_response_code( $response );
+        if ( 200 !== $code ) {
+            return new WP_Error( 'http_error', 'GitHubからのシグネチャ取得に失敗しました (HTTP ' . $code . ')' );
+        }
+
+        $body = wp_remote_retrieve_body( $response );
+        $json = json_decode( $body, true );
+
+        if ( ! is_array( $json ) || empty( $json['threat_keywords_high'] ) ) {
+            return new WP_Error( 'invalid_json', '取得したシグネチャデータの形式が不正です。' );
+        }
+
+        $clean_data = array(
+            'version'                  => sanitize_text_field( isset( $json['version'] ) ? $json['version'] : date( 'Ymd' ) ),
+            'updated_at'               => current_time( 'Y-m-d H:i:s' ),
+            'threat_keywords_high'     => array_values( array_filter( array_map( 'sanitize_text_field', (array) $json['threat_keywords_high'] ) ) ),
+            'threat_keywords_medium'   => array_values( array_filter( array_map( 'sanitize_text_field', (array) $json['threat_keywords_medium'] ) ) ),
+            'suspicious_email_domains' => array_values( array_filter( array_map( 'sanitize_text_field', (array) $json['suspicious_email_domains'] ) ) ),
+        );
+
+        update_site_option( 'wpis_signatures', $clean_data );
+        update_site_option( 'wpis_signatures_synced_at', current_time( 'Y-m-d H:i:s' ) );
+
+        return $clean_data;
+    }
+
+    public function ajax_sync_signatures() {
+        if ( ! check_ajax_referer( 'wpis_nonce_action', '_wpnonce', false ) ) {
+            wp_send_json_error( array( 'message' => 'セキュリティトークン(Nonce)の検証に失敗しました。' ), 403 );
+        }
+
+        if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_network' ) ) {
+            wp_send_json_error( array( 'message' => '操作権限がありません。' ), 403 );
+        }
+
+        $res = $this->sync_remote_signatures( true );
+        if ( is_wp_error( $res ) ) {
+            wp_send_json_error( array( 'message' => $res->get_error_message() ) );
+        }
+
+        $signatures = $this->get_signatures();
+        wp_send_json_success( array(
+            'message'    => 'GitHubから最新検知キーワードを同期・更新しました！',
+            'version'    => $signatures['version'],
+            'updated_at' => $signatures['updated_at'],
+            'counts'     => array(
+                'high'    => count( $signatures['threat_keywords_high'] ),
+                'medium'  => count( $signatures['threat_keywords_medium'] ),
+                'domains' => count( $signatures['suspicious_email_domains'] ),
+            ),
+        ) );
     }
 
     public function register_admin_menu() {
@@ -156,14 +268,14 @@ class WP_Incident_Sweeper {
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '2.20261015.5'
+            '2.20261015.6'
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '2.20261015.5',
+            '2.20261015.6',
             true
         );
 
@@ -259,7 +371,7 @@ class WP_Incident_Sweeper {
             }
 
             $u_email = strtolower( $u->user_email );
-            foreach ( $this->suspicious_email_domains as $bad_domain ) {
+            foreach ( $this->get_suspicious_email_domains() as $bad_domain ) {
                 if ( strpos( $u_email, $bad_domain ) !== false ) {
                     $is_threat = true;
                     $reasons[] = '不審なメールアドレスドメイン ("' . esc_html( $bad_domain ) . '")';
@@ -303,6 +415,9 @@ class WP_Incident_Sweeper {
         $posts_data = array();
         $threat_post_count = 0;
 
+        $kw_high = $this->get_threat_keywords_high();
+        $kw_med  = $this->get_threat_keywords_medium();
+
         foreach ( $sites_to_scan as $target_site ) {
             $blog_id   = $target_site['id'];
             $site_name = $target_site['name'];
@@ -315,21 +430,54 @@ class WP_Incident_Sweeper {
 
             // 1. 本文（post_content）の改ざんシグネチャをSQLで超高速抽出（メモリ消費ゼロ）
             $high_likes = array();
-            foreach ( $this->threat_keywords_high as $kw ) {
+            foreach ( $kw_high as $kw ) {
                 $high_likes[] = "p.post_content LIKE " . $wpdb->prepare( '%s', '%' . $wpdb->esc_like( $kw ) . '%' );
             }
-            $threat_high_ids = array_flip( array_map( 'intval', (array) $wpdb->get_col(
+            $threat_high_ids = array_map( 'intval', (array) $wpdb->get_col(
                 "SELECT p.ID FROM {$wpdb->posts} p WHERE p.post_type NOT IN ({$in_clause}) AND (" . implode( ' OR ', $high_likes ) . ")"
-            ) ) );
+            ) );
+
+            // ヒットした危険記事のみ本文を取得し、具体的なキーワードを特定（記事数0〜数件のため負荷ゼロ）
+            $high_matched_words = array();
+            if ( ! empty( $threat_high_ids ) ) {
+                $ids_in = implode( ',', $threat_high_ids );
+                $threat_rows = $wpdb->get_results( "SELECT ID, post_content FROM {$wpdb->posts} WHERE ID IN ({$ids_in})" );
+                foreach ( $threat_rows as $tr ) {
+                    $c_lower = mb_strtolower( (string) $tr->post_content, 'UTF-8' );
+                    $m_list = array();
+                    foreach ( $kw_high as $kw ) {
+                        if ( mb_strpos( $c_lower, $kw ) !== false ) {
+                            $m_list[] = $kw;
+                        }
+                    }
+                    $high_matched_words[ (int) $tr->ID ] = $m_list;
+                }
+            }
 
             // 2. 本文のスパム・不審コードをSQLで超高速抽出
             $med_likes = array();
-            foreach ( $this->threat_keywords_medium as $kw ) {
+            foreach ( $kw_med as $kw ) {
                 $med_likes[] = "p.post_content LIKE " . $wpdb->prepare( '%s', '%' . $wpdb->esc_like( $kw ) . '%' );
             }
-            $threat_med_ids = array_flip( array_map( 'intval', (array) $wpdb->get_col(
+            $threat_med_ids = array_map( 'intval', (array) $wpdb->get_col(
                 "SELECT p.ID FROM {$wpdb->posts} p WHERE p.post_type NOT IN ({$in_clause}) AND (" . implode( ' OR ', $med_likes ) . ")"
-            ) ) );
+            ) );
+
+            $med_matched_words = array();
+            if ( ! empty( $threat_med_ids ) ) {
+                $ids_in = implode( ',', $threat_med_ids );
+                $threat_rows = $wpdb->get_results( "SELECT ID, post_content FROM {$wpdb->posts} WHERE ID IN ({$ids_in})" );
+                foreach ( $threat_rows as $tr ) {
+                    $c_lower = mb_strtolower( (string) $tr->post_content, 'UTF-8' );
+                    $m_list = array();
+                    foreach ( $kw_med as $kw ) {
+                        if ( mb_strpos( $c_lower, $kw ) !== false ) {
+                            $m_list[] = $kw;
+                        }
+                    }
+                    $med_matched_words[ (int) $tr->ID ] = $m_list;
+                }
+            }
 
             // 3. メインクエリ（巨大な post_content を除外してメモリ枯渇・500/504エラーを完全防止）
             $sql = "
@@ -365,35 +513,37 @@ class WP_Incident_Sweeper {
 
                     if ( in_array( $author_id, $threat_user_ids, true ) ) {
                         $severity = 'high';
-                        $reasons[] = '不審なユーザー（wp2_* 等）が作成した記事';
+                        $reasons[] = '🚨 不審ユーザー作成記事 (' . esc_html( $author_name ) . ')';
                     }
 
-                    // 本文内の改ざんシグネチャ検知（SQL抽出結果）
-                    if ( isset( $threat_high_ids[ $post_id ] ) ) {
+                    // 本文内の改ざんシグネチャ検知（具体的な単語を表示）
+                    if ( isset( $high_matched_words[ $post_id ] ) && ! empty( $high_matched_words[ $post_id ] ) ) {
                         $severity = 'high';
-                        $reasons[] = '🚨 改ざん・Webシェル痕跡（本文内）';
+                        $words_str = implode( '", "', array_slice( $high_matched_words[ $post_id ], 0, 3 ) );
+                        $reasons[] = '🚨 本文改ざん痕跡: "' . esc_html( $words_str ) . '"';
                     }
 
-                    // タイトル・スラッグ内の危険キーワード検知（メモリ消費ゼロ）
+                    // タイトル・スラッグ内の危険キーワード検知（具体的な単語を表示）
                     $title_slug_text = mb_strtolower( (string) $title . ' ' . (string) $slug, 'UTF-8' );
-                    foreach ( $this->threat_keywords_high as $kw ) {
+                    foreach ( $kw_high as $kw ) {
                         if ( mb_strpos( $title_slug_text, $kw ) !== false ) {
                             $severity = 'high';
-                            $reasons[] = '🚨 改ざん・Webシェル痕跡: "' . esc_html( $kw ) . '"';
+                            $reasons[] = '🚨 タイトル改ざん: "' . esc_html( $kw ) . '"';
                             break;
                         }
                     }
 
-                    // 中危険度（本文またはタイトル・スラッグ）
+                    // 中危険度（本文またはタイトル・スラッグの具体単語）
                     if ( $severity !== 'high' ) {
-                        if ( isset( $threat_med_ids[ $post_id ] ) ) {
+                        if ( isset( $med_matched_words[ $post_id ] ) && ! empty( $med_matched_words[ $post_id ] ) ) {
                             $severity = 'medium';
-                            $reasons[] = '⚠️ スパム/不審コード（本文内）';
+                            $words_str = implode( '", "', array_slice( $med_matched_words[ $post_id ], 0, 3 ) );
+                            $reasons[] = '⚠️ 本文スパム/不審コード: "' . esc_html( $words_str ) . '"';
                         } else {
-                            foreach ( $this->threat_keywords_medium as $kw ) {
+                            foreach ( $kw_med as $kw ) {
                                 if ( mb_strpos( $title_slug_text, $kw ) !== false ) {
                                     $severity = 'medium';
-                                    $reasons[] = '⚠️ スパム/不審コード: "' . esc_html( $kw ) . '"';
+                                    $reasons[] = '⚠️ タイトルスパム: "' . esc_html( $kw ) . '"';
                                     break;
                                 }
                             }
@@ -402,7 +552,7 @@ class WP_Incident_Sweeper {
 
                     if ( $severity === 'clean' && in_array( $status, array( 'draft', 'trash', 'pending', 'private' ), true ) ) {
                         $severity = 'low';
-                        $reasons[] = '非公開/下書き/ゴミ箱';
+                        $reasons[] = 'ℹ️ 非公開/下書き/ゴミ箱';
                     }
 
                     if ( $severity === 'high' || $severity === 'medium' ) {
@@ -439,11 +589,18 @@ class WP_Incident_Sweeper {
             }
         }
 
+        $sig_info = $this->get_signatures();
         wp_send_json_success( array(
-            'posts'   => $posts_data,
-            'users'   => $users_data,
-            'sites'   => $sites_to_scan,
-            'summary' => array(
+            'posts'      => $posts_data,
+            'users'      => $users_data,
+            'sites'      => $sites_to_scan,
+            'signatures' => array(
+                'version'    => $sig_info['version'],
+                'updated_at' => $sig_info['updated_at'],
+                'high_count' => count( $sig_info['threat_keywords_high'] ),
+                'med_count'  => count( $sig_info['threat_keywords_medium'] ),
+            ),
+            'summary'    => array(
                 'totalSites'  => count( $sites_to_scan ),
                 'totalPosts'  => count( $posts_data ),
                 'threatPosts' => $threat_post_count,
@@ -518,7 +675,7 @@ class WP_Incident_Sweeper {
             if ( $force_delete && 'publish' === $post->post_status ) {
                 $check_text = mb_strtolower( (string) $post->post_title . ' ' . (string) $post->post_name . ' ' . (string) $post->post_content, 'UTF-8' );
                 $is_confirmed_threat = false;
-                foreach ( $this->threat_keywords_high as $kw ) {
+                foreach ( $this->get_threat_keywords_high() as $kw ) {
                     if ( mb_strpos( $check_text, $kw ) !== false ) {
                         $is_confirmed_threat = true;
                         break;
@@ -613,7 +770,7 @@ class WP_Incident_Sweeper {
                 $is_explicit_attacker = true;
             }
             $u_email = strtolower( $user_obj->user_email );
-            foreach ( $this->suspicious_email_domains as $bad_domain ) {
+            foreach ( $this->get_suspicious_email_domains() as $bad_domain ) {
                 if ( strpos( $u_email, $bad_domain ) !== false ) {
                     $is_threat_user = true;
                     $is_explicit_attacker = true;
@@ -694,6 +851,15 @@ class WP_Incident_Sweeper {
                             サイト内の全コンテンツ（公開・下書き・ゴミ箱）およびユーザーを一括クロールし、不正な痕跡を特定・安全に駆除します。
                         <?php endif; ?>
                     </p>
+                    <?php $sig = $this->get_signatures(); ?>
+                    <div style="margin-top:8px;font-size:12px;color:#64748b;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span style="background:#f1f5f9;border:1px solid #e2e8f0;padding:2px 8px;border-radius:4px;">
+                            🛡️ 検知シグネチャ: <code id="wpis-sig-version" style="font-weight:bold;color:#0f172a;"><?php echo esc_html( $sig['version'] ); ?></code>
+                            （危険: <strong id="wpis-sig-high" style="color:#dc2626;"><?php echo count( $sig['threat_keywords_high'] ); ?></strong>件 / 警告: <strong id="wpis-sig-med" style="color:#d97706;"><?php echo count( $sig['threat_keywords_medium'] ); ?></strong>件）
+                        </span>
+                        <span style="font-size:11px;color:#94a3b8;">最終同期: <span id="wpis-sig-date"><?php echo esc_html( $sig['updated_at'] ); ?></span></span>
+                    </div>
+
                     <?php if ( is_multisite() && ! $is_network ) : ?>
                     <div style="margin-top:10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:8px 12px;font-size:12px;color:#0369a1;">
                         ℹ️ <strong>サブサイト個別モード:</strong> 現在のサイト（<?php bloginfo( 'name' ); ?>）のみを対象にスキャンしています。全傘下サイトを一括横断スキャンする場合は、<a href="<?php echo esc_url( network_admin_url( 'admin.php?page=wp-incident-sweeper' ) ); ?>" style="color:#0284c7;font-weight:bold;text-decoration:underline;">サイトネットワーク管理のスイーパー</a> をご利用ください。
@@ -701,6 +867,10 @@ class WP_Incident_Sweeper {
                     <?php endif; ?>
                 </div>
                 <div class="wpis-actions">
+                    <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-sync-kw" title="GitHubから最新の検知キーワード定義を取得・更新します">
+                        <span class="dashicons dashicons-cloud" style="font-size:16px;width:16px;height:16px;"></span>
+                        最新KW更新 (GitHub)
+                    </button>
                     <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-csv">
                         <span class="dashicons dashicons-download" style="font-size:16px;width:16px;height:16px;"></span>
                         結果をCSV出力

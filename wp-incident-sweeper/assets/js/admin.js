@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // DOM Elements
   const btnScan = document.getElementById('wpis-btn-scan');
   const btnExportCsv = document.getElementById('wpis-btn-csv');
+  const btnSyncKw = document.getElementById('wpis-btn-sync-kw');
   const tabBtns = document.querySelectorAll('.wpis-tab-btn');
   const panels = document.querySelectorAll('.wpis-panel');
 
@@ -127,6 +128,15 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('wpis-badge-posts-threat').textContent = scanData.summary.threatPosts;
     document.getElementById('wpis-badge-users-threat').textContent = scanData.summary.threatUsers;
 
+    if (scanData.signatures) {
+      updateSignatureDisplay(
+        scanData.signatures.version,
+        scanData.signatures.high_count,
+        scanData.signatures.med_count,
+        scanData.signatures.updated_at
+      );
+    }
+
     // ネットワーク管理画面時のみサイト別フィルターを動的生成
     if (isNetwork && postsSiteFilter && scanData.sites && scanData.sites.length > 0) {
       const currentVal = postsSiteFilter.value;
@@ -190,9 +200,20 @@ document.addEventListener('DOMContentLoaded', function () {
       };
       const statusBadge = statusMap[item.status] || `<span class="wpis-badge wpis-badge-muted">${escapeHtml(item.status)}</span>`;
 
-      const reasonsHtml = item.reasons.length > 0
-        ? item.reasons.map(r => `<span class="wpis-reason-tag">${escapeHtml(r)}</span>`).join(' ')
-        : '<span style="color:#94a3b8;">-</span>';
+      // 視認性の高い検知理由ピルバッジの生成
+      const reasonsBadgesHtml = item.reasons.length > 0
+        ? item.reasons.map(r => {
+            let bg = '#fee2e2', color = '#991b1b', border = '#fecaca'; // danger
+            if (r.startsWith('⚠️')) {
+              bg = '#fef3c7'; color = '#92400e'; border = '#fde68a'; // warning
+            } else if (r.startsWith('🔒')) {
+              bg = '#e0f2fe'; color = '#0369a1'; border = '#bae6fd'; // info
+            } else if (r.startsWith('ℹ️') || r.startsWith('非公開')) {
+              bg = '#f1f5f9'; color = '#475569'; border = '#e2e8f0'; // muted
+            }
+            return `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:${bg};color:${color};border:1px solid ${border};line-height:1.4;">${escapeHtml(r)}</span>`;
+          }).join('')
+        : '<span style="color:#94a3b8;font-size:12px;">-</span>';
 
       const safeId = parseInt(item.id, 10);
       const safeBlogId = parseInt(item.blog_id || 1, 10);
@@ -216,14 +237,17 @@ document.addEventListener('DOMContentLoaded', function () {
           <td>${severityBadge}</td>
           ${siteCell}
           <td>
-            <strong><a href="${safeEditUrl}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;">${escapeHtml(item.title || '(タイトルなし)')}</a></strong>
-            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">ID: ${safeId} | スラッグ: ${escapeHtml(item.slug || '-')}</div>
+            <strong><a href="${safeEditUrl}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;font-size:13px;">${escapeHtml(item.title || '(タイトルなし)')}</a></strong>
+            <div style="font-size:11px;color:#94a3b8;margin:2px 0 4px 0;">ID: ${safeId} | スラッグ: ${escapeHtml(item.slug || '-')}</div>
+            <div class="wpis-title-reasons" style="display:flex;flex-wrap:wrap;align-items:center;margin-top:4px;">
+              ${reasonsBadgesHtml}
+            </div>
           </td>
           <td><span class="wpis-badge wpis-badge-muted">${escapeHtml(item.post_type)}</span></td>
           <td>${statusBadge}</td>
           <td><span class="${item.author_is_threat ? 'wpis-badge wpis-badge-danger' : ''}">${escapeHtml(item.author_name)}</span></td>
           <td style="white-space:nowrap;font-size:12px;">${escapeHtml(item.modified_date)}</td>
-          <td>${reasonsHtml}</td>
+          <td>${reasonsBadgesHtml}</td>
         </tr>
       `;
     }).join('');
@@ -337,17 +361,26 @@ document.addEventListener('DOMContentLoaded', function () {
       const safeId = parseInt(u.id, 10);
       const isDisabled = (safeId === 1) ? 'disabled title="初期マスター管理者のため保護されています"' : '';
 
+      const userReasonsHtml = u.threat_reasons.length > 0
+        ? u.threat_reasons.map(r => `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;line-height:1.4;">${escapeHtml(r)}</span>`).join('')
+        : '<span style="color:#94a3b8;font-size:12px;">-</span>';
+
       return `
         <tr class="${rowClass}" data-id="${safeId}">
           <td style="text-align:center;">
             <input type="checkbox" class="wpis-user-check" value="${safeId}" data-threat="${u.is_threat}" ${isDisabled}>
           </td>
           <td>${badge}</td>
-          <td><strong>${escapeHtml(u.login)}</strong> (ID: ${safeId})</td>
+          <td>
+            <strong>${escapeHtml(u.login)}</strong> (ID: ${safeId})
+            <div style="margin-top:4px;display:flex;flex-wrap:wrap;">
+              ${userReasonsHtml}
+            </div>
+          </td>
           <td>${escapeHtml(u.email)}</td>
           <td><span class="wpis-badge wpis-badge-muted">${escapeHtml(u.roles.join(', '))}</span></td>
           <td>${escapeHtml(u.registered)}</td>
-          <td>${u.threat_reasons.map(r => `<span class="wpis-reason-tag">${escapeHtml(r)}</span>`).join(' ') || '-'}</td>
+          <td>${userReasonsHtml}</td>
         </tr>
       `;
     }).join('');
@@ -471,6 +504,50 @@ document.addEventListener('DOMContentLoaded', function () {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  // GitHub検知シグネチャ同期
+  if (btnSyncKw) {
+    btnSyncKw.addEventListener('click', async () => {
+      const originalText = btnSyncKw.innerHTML;
+      btnSyncKw.disabled = true;
+      btnSyncKw.innerHTML = '<span class="wpis-spinner" style="display:inline-block;width:14px;height:14px;margin-right:6px;border:2px solid #cbd5e1;border-top-color:#0284c7;border-radius:50%;animation:wpis-spin 0.8s linear infinite;"></span> 同期中...';
+
+      try {
+        const formData = new FormData();
+        formData.append('action', 'wpis_sync_signatures');
+        formData.append('_wpnonce', nonce);
+
+        const json = await safeFetchJson(formData);
+        if (!json.success) {
+          alert('キーワード更新に失敗しました:\n' + (json.data?.message || '不明なエラー'));
+          return;
+        }
+
+        const data = json.data;
+        updateSignatureDisplay(data.version, data.counts.high, data.counts.medium, data.updated_at);
+        alert(`✅ ${data.message}\nバージョン: ${data.version}\n危険KW: ${data.counts.high}件 / 警告KW: ${data.counts.medium}件`);
+        // 最新キーワードで即時再スキャン
+        runScan();
+      } catch (err) {
+        console.error(err);
+        alert('キーワード同期通信エラー:\n' + (err.message || err));
+      } finally {
+        btnSyncKw.disabled = false;
+        btnSyncKw.innerHTML = originalText;
+      }
+    });
+  }
+
+  function updateSignatureDisplay(version, highCount, medCount, updatedAt) {
+    const elVer = document.getElementById('wpis-sig-version');
+    const elHigh = document.getElementById('wpis-sig-high');
+    const elMed = document.getElementById('wpis-sig-med');
+    const elDate = document.getElementById('wpis-sig-date');
+    if (elVer && version) elVer.textContent = version;
+    if (elHigh && highCount !== undefined) elHigh.textContent = highCount;
+    if (elMed && medCount !== undefined) elMed.textContent = medCount;
+    if (elDate && updatedAt) elDate.textContent = updatedAt;
   }
 
   btnScan.addEventListener('click', runScan);

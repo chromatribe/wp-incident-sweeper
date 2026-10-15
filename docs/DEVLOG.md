@@ -1,5 +1,23 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-15 | v2.20261015.6 検知KWのGitHub自動同期と一覧画面での検知理由即時可視化
+- 🧠 思考:
+  1. 脅威キーワードは日々変化するため、プラグイン本体のコードを変更することなく GitHub (Raw JSON) から最新の検知シグネチャを自動更新できるようにする。
+  2. テーブル右端の検知理由列は横スクロールが必要で見落としやすいため、タイトル直下およびユーザー名直下に色分けされたピルバッジを配置し、なぜ検知されたのかが一目で分かるようにする。
+- 🔨 やった:
+  1. `signatures.json` をリポジトリルートに配置（危険KW 23件、警告KW 35件、不審ドメイン 9件）。
+  2. PHPシグネチャ管理エンジン（`REMOTE_SIGNATURES_URL`, `get_signatures`, `sync_remote_signatures`, `ajax_sync_signatures`）を実装。
+  3. GitHub 障害・オフライン時も組み込み定義に自動マージ・フォールバックする安全機構を実装。
+  4. ヘッダーに「最新KW更新 (GitHub)」ボタンとシグネチャステータス表示（バージョン・件数・最終同期日）を設置。
+  5. 記事スキャン時に危険・警告記事のみピンポイントでマッチ単語を特定（メモリ消費ゼロを維持）。
+  6. JS側（`renderPosts`, `renderUsers`）でタイトル・ユーザー名直下に視認性の高いピルバッジ（`reasonsBadgesHtml`）を表示。
+  7. `test_sweeper.py` に `test_signature_engine` を追加し、Node.js モック描画含め全テスト PASS。
+  8. Qlypx方式で全7箇所を `v2.20261015.6` に同期し、`check_version_sync.py` PASS。最新ZIPをビルド。
+- ❌ 失敗: なし。
+- ✅ 成功: `check_version_sync.py` および `test_sweeper.py` が exit code 0 で完全通過。
+- 🧭 決定: シグネチャは `signatures.json` を SSOT とし、管理画面からワンクリックで GitHub から最新化できるハイブリッド運用体制を確立。
+- 🔗 参照: `docs/CHANGELOG.md` / `spec/SPEC.md` / `signatures.json`
+
 ## 2026-10-15 | v2.20261015.5 フロント描画バグ（safeBlogId is not defined）の即時解消
 - 🧠 思考: サーバー側スキャン（SQL抽出）は無事成功したが、ブラウザ側テーブル描画ループ内で safeBlogId の宣言が抜けていたため ReferenceError が発生。
 - 🔨 やった:
