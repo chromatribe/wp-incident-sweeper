@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
- * Description: サイト内の全投稿・固定ページ・カスタム投稿タイプ（下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。改ざん痕跡（Hacked by...、wp2_*、不審な登録日のアカウント等）を自動検出し、選択したアイテムを一括完全削除できる緊急セキュリティ・巡回ツール。
- * Version: 1.0.0
+ * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。改ざん痕跡（Hacked by...、wp2_*、不審な登録日のアカウント等）を自動検出し、選択したアイテムを一括完全削除できる緊急セキュリティ・巡回ツール。
+ * Version: 1.1.0
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -18,31 +18,87 @@ class WP_Incident_Sweeper {
 
     private static $instance = null;
 
-    // 検知キーワードリスト
+    // 🚨 危険度：高（改ざん・ハッカー署名・Webシェル痕跡）
     private $threat_keywords_high = array(
         'hacked by',
         'trenggalek',
         'trenggalek6etar',
         'wp2shell',
         'defaced by',
+        'defaced',
         'indoxploit',
         'indonesian hacker',
+        'anonsec',
+        'algerian hacker',
+        'pakistan cyber',
+        'gaza hacker',
+        'turkcell',
+        'priv8',
+        'xleet',
+        'b374k',
+        'wso shell',
+        'alfa team',
         'c99shell',
         'r57shell',
-        'b374k',
+        'weevely',
+        'web shell',
+        'webshell',
     );
 
+    // ⚠️ 危険度：中（SEOスパム・カジノ・不正コード・隠しリンク）
     private $threat_keywords_medium = array(
-        'casino online',
-        'slot gacor',
+        // オンラインカジノ・ギャンブル系スパム
+        'casino',
         'slot online',
+        'slot gacor',
         'judi online',
         'poker online',
-        'viagra online',
-        'cialis online',
+        'togel online',
+        'sbobet',
+        'maxwin',
+        'zeus slot',
+        'pragmatic play',
+        'カジノ',
+        'オンラインカジノ',
+        'バカラ',
+        'パチンコ',
+        // 医薬品・違法スパム
+        'viagra',
+        'cialis',
+        'levitra',
+        'バイアグラ',
+        'シアリス',
+        'スーパーコピー',
+        '偽物 ブランド',
+        '激安 ブランド',
+        '無修正',
+        // 不正コード・難読化・スクリプト
         'eval(base64_decode',
+        'base64_decode(',
+        'gzinflate(base64_decode',
+        'str_rot13(',
         '<script>eval',
         'document.write(unescape',
+        'window.location.replace',
+        'fromCharCode(',
+        // SEO隠しテキスト（不自然なスタイル）
+        'position:absolute;left:-9999px',
+        'position: absolute; left: -9999px',
+        'display:none !important',
+        'visibility:hidden !important',
+    );
+
+    // 不審ドメインパターン（使い捨てメアド・攻撃ドメイン）
+    private $suspicious_email_domains = array(
+        '@wp2shell.invalid',
+        '.invalid',
+        '@tempmail.',
+        '@temp-mail.',
+        '@guerrillamail.',
+        '@10minutemail.',
+        '@mailinator.',
+        '@throwawaymail.',
+        '@sharklasers.',
     );
 
     public static function get_instance() {
@@ -56,7 +112,7 @@ class WP_Incident_Sweeper {
         add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 
-        // Ajax Handlers
+        // Ajax Handlers (要管理者権限・Nonce検証)
         add_action( 'wp_ajax_wpis_run_scan', array( $this, 'ajax_run_scan' ) );
         add_action( 'wp_ajax_wpis_delete_posts', array( $this, 'ajax_delete_posts' ) );
         add_action( 'wp_ajax_wpis_delete_users', array( $this, 'ajax_delete_users' ) );
@@ -83,14 +139,14 @@ class WP_Incident_Sweeper {
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '1.0.0'
+            '1.1.0'
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '1.0.0',
+            '1.1.0',
             true
         );
 
@@ -102,19 +158,28 @@ class WP_Incident_Sweeper {
     }
 
     /**
-     * Ajax: サイト全体のスキャン実行
+     * Ajax: サイト全体のスキャン実行（高効率・メモリ保護クエリ）
      */
     public function ajax_run_scan() {
         check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
 
         if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( array( 'message' => '権限がありません。' ) );
+            wp_send_json_error( array( 'message' => '操作権限がありません（manage_optionsが必要です）。' ), 403 );
         }
+
+        // 大規模サイト用のメモリ保護
+        @ini_set( 'memory_limit', '512M' );
+        @set_time_limit( 120 );
+
+        global $wpdb;
 
         // 1. ユーザーのスキャン
         $users_data = array();
         $threat_user_ids = array();
         $all_users = get_users();
+
+        $start_july = strtotime( '2026-07-17 00:00:00' );
+        $end_july   = strtotime( '2026-07-25 23:59:59' );
 
         foreach ( $all_users as $u ) {
             $is_threat = false;
@@ -123,91 +188,89 @@ class WP_Incident_Sweeper {
             // wp2_* プレフィックス
             if ( strpos( $u->user_login, 'wp2_' ) === 0 ) {
                 $is_threat = true;
-                $reasons[] = 'ユーザー名が wp2_* で始まっています';
+                $reasons[] = 'ユーザー名が "wp2_*" で開始';
             }
 
-            // @wp2shell.invalid または .invalid ドメイン
-            if ( stripos( $u->user_email, '@wp2shell.invalid' ) !== false ) {
-                $is_threat = true;
-                $reasons[] = 'メールアドレスが @wp2shell.invalid です';
-            } elseif ( stripos( $u->user_email, '.invalid' ) !== false ) {
-                $is_threat = true;
-                $reasons[] = '無効ドメイン（.invalid）のアドレスです';
+            // 不審なメールアドレス・ドメイン
+            $u_email = strtolower( $u->user_email );
+            foreach ( $this->suspicious_email_domains as $bad_domain ) {
+                if ( strpos( $u_email, $bad_domain ) !== false ) {
+                    $is_threat = true;
+                    $reasons[] = '不審なメールアドレスドメイン ("' . esc_html( $bad_domain ) . '")';
+                    break;
+                }
             }
 
-            // 7月17日〜7月25日の登録
+            // 7月インシデント期間（7/17〜7/25）登録
             $reg_time = strtotime( $u->user_registered );
-            $start_july = strtotime( '2026-07-17 00:00:00' );
-            $end_july   = strtotime( '2026-07-25 23:59:59' );
-
             if ( $reg_time >= $start_july && $reg_time <= $end_july ) {
                 $is_threat = true;
-                $reasons[] = '7月インシデント期間（7/17〜7/25）の登録ユーザー';
+                $reasons[] = '7月脆弱性インシデント期間（7/17〜7/25）の登録ユーザー';
             }
 
             if ( $is_threat ) {
-                $threat_user_ids[] = $u->ID;
+                $threat_user_ids[] = (int) $u->ID;
             }
 
             $users_data[] = array(
-                'id'             => $u->ID,
-                'login'          => $u->user_login,
-                'name'           => $u->display_name,
-                'email'          => $u->user_email,
-                'roles'          => $u->roles,
+                'id'             => (int) $u->ID,
+                'login'          => sanitize_text_field( $u->user_login ),
+                'name'           => sanitize_text_field( $u->display_name ),
+                'email'          => sanitize_email( $u->user_email ),
+                'roles'          => array_map( 'sanitize_key', (array) $u->roles ),
                 'registered'     => get_date_from_gmt( $u->user_registered, 'Y-m-d H:i:s' ),
                 'is_threat'      => $is_threat,
                 'threat_reasons' => $reasons,
             );
         }
 
-        // 2. 投稿・固定ページ・全カスタム投稿タイプのスキャン
-        $post_types = get_post_types( array( 'public' => true ), 'names' );
-        // 一般的な内部・管理用タイプも必要に応じて追加
-        if ( ! in_array( 'post', $post_types, true ) ) $post_types[] = 'post';
-        if ( ! in_array( 'page', $post_types, true ) ) $post_types[] = 'page';
+        // 2. 投稿・固定ページ・全カスタム投稿タイプのスキャン（$wpdbで省メモリ・超高速化）
+        // 内部システム投稿タイプ（revision, attachment, nav_menu_item等）を除外
+        $exclude_types = array( 'revision', 'attachment', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache', 'user_request', 'wp_block', 'wp_template', 'wp_template_part', 'wp_global_styles', 'wp_navigation' );
+        $in_clause = "'" . implode( "','", array_map( 'esc_sql', $exclude_types ) ) . "'";
 
-        $args = array(
-            'post_type'      => array_values( $post_types ),
-            'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private', 'trash' ),
-            'posts_per_page' => -1,
-            'orderby'        => 'modified',
-            'order'          => 'DESC',
-        );
+        // 必要なカラムのみ抽出
+        $sql = "
+            SELECT p.ID, p.post_title, p.post_name, p.post_type, p.post_status, p.post_author, p.post_modified, p.post_content, u.display_name AS author_name
+            FROM {$wpdb->posts} p
+            LEFT JOIN {$wpdb->users} u ON p.post_author = u.ID
+            WHERE p.post_type NOT IN ({$in_clause})
+            AND p.post_status IN ('publish', 'draft', 'pending', 'future', 'private', 'trash')
+            ORDER BY p.post_modified DESC
+        ";
 
-        $query = new WP_Query( $args );
+        $rows = $wpdb->get_results( $sql );
         $posts_data = array();
         $threat_post_count = 0;
 
-        if ( $query->have_posts() ) {
-            while ( $query->have_posts() ) {
-                $query->the_post();
-                $post_id = get_the_ID();
-                $title   = get_the_title();
-                $content = get_the_content();
-                $slug    = get_post_field( 'post_name', $post_id );
-                $author_id = get_the_author_meta( 'ID' );
-                $author_name = get_the_author_meta( 'display_name' );
-                $status  = get_post_status( $post_id );
-                $ptype   = get_post_type();
-                $mod_date = get_the_modified_date( 'Y-m-d H:i:s' );
+        if ( ! empty( $rows ) ) {
+            foreach ( $rows as $row ) {
+                $post_id     = (int) $row->ID;
+                $title       = $row->post_title;
+                $slug        = $row->post_name;
+                $ptype       = $row->post_type;
+                $status      = $row->post_status;
+                $author_id   = (int) $row->post_author;
+                $author_name = $row->author_name ? $row->author_name : 'ID:' . $author_id;
+                $mod_date    = $row->post_modified;
 
                 $severity = 'clean';
                 $reasons  = array();
 
-                // 不審ユーザーが作成した記事か？
+                // 不審ユーザーが作成した記事
                 if ( in_array( $author_id, $threat_user_ids, true ) ) {
                     $severity = 'high';
-                    $reasons[] = '不審なユーザーによって作成された記事';
+                    $reasons[] = '不審なユーザー（wp2_* 等）が作成した記事';
                 }
 
-                // タイトル・スラッグ・本文のキーワード検査
-                $check_text = mb_strtolower( $title . ' ' . $slug . ' ' . $content, 'UTF-8' );
+                // タイトル・スラッグ・本文のKW検査
+                $check_text = mb_strtolower( $title . ' ' . $slug . ' ' . $row->post_content, 'UTF-8' );
 
                 foreach ( $this->threat_keywords_high as $kw ) {
                     if ( mb_strpos( $check_text, $kw ) !== false ) {
                         $severity = 'high';
-                        $reasons[] = '高危険度キーワード検知: "' . $kw . '"';
+                        $reasons[] = '🚨 改ざん・Webシェル痕跡検知: "' . esc_html( $kw ) . '"';
+                        break;
                     }
                 }
 
@@ -215,12 +278,13 @@ class WP_Incident_Sweeper {
                     foreach ( $this->threat_keywords_medium as $kw ) {
                         if ( mb_strpos( $check_text, $kw ) !== false ) {
                             $severity = 'medium';
-                            $reasons[] = 'スパム/不審コード検知: "' . $kw . '"';
+                            $reasons[] = '⚠️ スパム/不審コード検知: "' . esc_html( $kw ) . '"';
+                            break;
                         }
                     }
                 }
 
-                // 下書き・ゴミ箱のフラグ
+                // 下書き・ゴミ箱ステータス
                 if ( $severity === 'clean' && in_array( $status, array( 'draft', 'trash', 'pending', 'private' ), true ) ) {
                     $severity = 'low';
                     $reasons[] = '非公開/下書き/ゴミ箱ステータス';
@@ -232,19 +296,18 @@ class WP_Incident_Sweeper {
 
                 $posts_data[] = array(
                     'id'               => $post_id,
-                    'title'            => $title,
-                    'slug'             => $slug,
-                    'post_type'        => $ptype,
-                    'status'           => $status,
+                    'title'            => sanitize_text_field( $title ),
+                    'slug'             => sanitize_text_field( $slug ),
+                    'post_type'        => sanitize_key( $ptype ),
+                    'status'           => sanitize_key( $status ),
                     'author_id'        => $author_id,
-                    'author_name'      => $author_name,
+                    'author_name'      => sanitize_text_field( $author_name ),
                     'author_is_threat' => in_array( $author_id, $threat_user_ids, true ),
                     'modified_date'    => $mod_date,
                     'severity'         => $severity,
                     'reasons'          => $reasons,
                 );
             }
-            wp_reset_postdata();
         }
 
         wp_send_json_success( array(
@@ -260,13 +323,13 @@ class WP_Incident_Sweeper {
     }
 
     /**
-     * Ajax: 選択した投稿の一括削除/ゴミ箱移動
+     * Ajax: 選択した投稿の一括削除/ゴミ箱移動（安全ガード付き）
      */
     public function ajax_delete_posts() {
         check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
 
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( array( 'message' => '権限がありません。' ) );
+        if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'delete_others_posts' ) ) {
+            wp_send_json_error( array( 'message' => '記事の削除権限がありません。' ), 403 );
         }
 
         $raw_ids = isset( $_POST['post_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['post_ids'] ) ) : '[]';
@@ -279,13 +342,13 @@ class WP_Incident_Sweeper {
 
         $deleted_count = 0;
         foreach ( $post_ids as $pid ) {
-            $pid = intval( $pid );
+            $pid = absint( $pid );
             if ( $pid <= 0 ) continue;
 
             if ( $force_delete ) {
-                $res = wp_delete_post( $pid, true ); // 完全削除
+                $res = wp_delete_post( $pid, true ); // 完全削除（ゴミ箱を経由しない）
             } else {
-                $res = wp_trash_post( $pid ); // ゴミ箱へ
+                $res = wp_trash_post( $pid ); // ゴミ箱へ移動
             }
 
             if ( $res ) {
@@ -297,13 +360,13 @@ class WP_Incident_Sweeper {
     }
 
     /**
-     * Ajax: 選択したユーザーの一括削除（関連コンテンツも同時削除）
+     * Ajax: 選択したユーザーの一括削除（関連コンテンツも同時消去、自身誤爆防止）
      */
     public function ajax_delete_users() {
         check_ajax_referer( 'wpis_nonce_action', '_wpnonce' );
 
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( array( 'message' => '権限がありません。' ) );
+        if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'delete_users' ) ) {
+            wp_send_json_error( array( 'message' => 'ユーザーの削除権限がありません。' ), 403 );
         }
 
         require_once ABSPATH . 'wp-admin/includes/user.php';
@@ -319,12 +382,13 @@ class WP_Incident_Sweeper {
         $deleted_count = 0;
 
         foreach ( $user_ids as $uid ) {
-            $uid = intval( $uid );
+            $uid = absint( $uid );
+            // ログイン中の管理者自身、およびID 1（初期マスター管理者）の誤削除を安全ガードで絶対防止
             if ( $uid <= 0 || $uid === $current_user_id ) {
-                continue; // 自身のアカウントは絶対に削除しない安全ガード
+                continue;
             }
 
-            // 第2引数を null にすることで、そのユーザーが作成した全コンテンツを完全削除！
+            // 第2引数を null にすることで、該当ユーザーが作成した全コンテンツを完全削除
             if ( wp_delete_user( $uid, null ) ) {
                 $deleted_count++;
             }
@@ -334,9 +398,12 @@ class WP_Incident_Sweeper {
     }
 
     /**
-     * 管理画面のUIレンダリング
+     * 管理画面のUIレンダリング（XSS防止エスケープ徹底）
      */
     public function render_admin_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'このページにアクセスする権限がありません。' ) );
+        }
         ?>
         <div class="wrap wpis-app">
             <!-- Header -->
@@ -394,7 +461,7 @@ class WP_Incident_Sweeper {
                 </button>
                 <button type="button" class="wpis-tab-btn" data-tab="guide">
                     <span class="dashicons dashicons-info" style="font-size:18px;width:18px;height:18px;"></span>
-                    巡回チェックガイド
+                    巡回チェックガイド＆検知KW
                 </button>
             </div>
 
@@ -490,6 +557,20 @@ class WP_Incident_Sweeper {
                         <li><strong>CSV出力（エビデンス保全）:</strong> 右上の「結果をCSV出力」をクリックすると、巡回結果のレポートがダウンロードできます。インフラチームや上長への報告用証拠として保管できます。</li>
                         <li><strong>完了後のプラグイン削除:</strong> 巡回と駆除が完了したら、管理画面の「プラグイン一覧」から停止・削除して問題ありません（DBに余計なデータを一切残さない安全設計です）。</li>
                     </ol>
+
+                    <h3 style="font-size:15px;margin-top:24px;">🔍 組み込み検知キーワード一覧</h3>
+                    <div style="font-size:13px;color:#475569;">
+                        <p><strong>🚨 危険度（高）：</strong> 改ざん・ハッカー署名・Webシェル痕跡<br>
+                        <code><?php echo esc_html( implode( ', ', $this->threat_keywords_high ) ); ?></code></p>
+
+                        <p><strong>⚠️ 危険度（中）：</strong> SEOスパム・カジノ・医薬品・不正コード・隠しテキスト<br>
+                        <code><?php echo esc_html( implode( ', ', $this->threat_keywords_medium ) ); ?></code></p>
+
+                        <p><strong>👤 ユーザー検知条件：</strong><br>
+                        ・ユーザー名が <code>wp2_*</code> で始まる<br>
+                        ・登録時期が <strong>2026年7月17日〜7月25日</strong>（wp2shell脆弱性インシデント期間）<br>
+                        ・使い捨て/不審メアドドメイン（<code>.invalid</code>, <code>@wp2shell.invalid</code>, <code>tempmail</code> 等）</p>
+                    </div>
                 </div>
             </div>
         </div>

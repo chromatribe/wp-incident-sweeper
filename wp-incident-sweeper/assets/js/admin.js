@@ -1,6 +1,6 @@
 /**
  * WP Incident Sweeper — Admin Client Script
- * Zero-dependency, lightweight Vanilla JS
+ * Zero-dependency, lightweight Vanilla JS with robust XSS defense
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const nonce = wpisConfig.nonce;
   const ajaxUrl = wpisConfig.ajaxUrl;
+  const adminUrl = wpisConfig.adminUrl;
 
   let scanData = {
     posts: [],
@@ -85,8 +86,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (isLoading) {
       btnScan.disabled = true;
       btnScan.textContent = 'スキャン中...';
-      postsBody.innerHTML = `<tr><td colspan="7" class="wpis-loading-state"><div class="wpis-spinner"></div><div>サイト内を高速クロール中（全投稿・固定ページ・ユーザー）...</div></td></tr>`;
-      usersBody.innerHTML = `<tr><td colspan="6" class="wpis-loading-state"><div class="wpis-spinner"></div><div>ユーザーをスキャン中...</div></td></tr>`;
+      postsBody.innerHTML = `<tr><td colspan="8" class="wpis-loading-state"><div class="wpis-spinner"></div><div>サイト内を高速クロール中（全投稿・固定ページ・ユーザー）...</div></td></tr>`;
+      usersBody.innerHTML = `<tr><td colspan="7" class="wpis-loading-state"><div class="wpis-spinner"></div><div>ユーザーをスキャン中...</div></td></tr>`;
     } else {
       btnScan.disabled = false;
       btnScan.textContent = '再スキャン実行';
@@ -126,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     if (filtered.length === 0) {
-      postsBody.innerHTML = `<tr><td colspan="7" class="wpis-empty-state">該当するコンテンツはありません（安全です）</td></tr>`;
+      postsBody.innerHTML = `<tr><td colspan="8" class="wpis-empty-state">該当するコンテンツはありません（安全です）</td></tr>`;
       return;
     }
 
@@ -150,32 +151,32 @@ document.addEventListener('DOMContentLoaded', function () {
         pending: '<span class="wpis-badge wpis-badge-warning">保留</span>',
         private: '<span class="wpis-badge wpis-badge-muted">非公開</span>'
       };
-      const statusBadge = statusMap[item.status] || `<span class="wpis-badge wpis-badge-muted">${item.status}</span>`;
+      const statusBadge = statusMap[item.status] || `<span class="wpis-badge wpis-badge-muted">${escapeHtml(item.status)}</span>`;
 
       const reasonsHtml = item.reasons.length > 0
         ? item.reasons.map(r => `<span class="wpis-reason-tag">${escapeHtml(r)}</span>`).join(' ')
         : '<span style="color:#94a3b8;">-</span>';
 
-      const editUrl = `${wpisConfig.adminUrl}post.php?post=${item.id}&action=edit`;
+      const safeId = parseInt(item.id, 10);
+      const editUrl = `${adminUrl}post.php?post=${safeId}&action=edit`;
 
       return `
-        <tr class="${rowClass}" data-id="${item.id}">
-          <td style="text-align:center;"><input type="checkbox" class="wpis-post-check" value="${item.id}" data-severity="${item.severity}"></td>
+        <tr class="${rowClass}" data-id="${safeId}">
+          <td style="text-align:center;"><input type="checkbox" class="wpis-post-check" value="${safeId}" data-severity="${escapeHtml(item.severity)}"></td>
           <td>${severityBadge}</td>
           <td>
-            <strong><a href="${editUrl}" target="_blank" style="color:inherit;text-decoration:underline;">${escapeHtml(item.title || '(タイトルなし)')}</a></strong>
-            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">ID: ${item.id} | スラッグ: ${escapeHtml(item.slug || '-')}</div>
+            <strong><a href="${editUrl}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;">${escapeHtml(item.title || '(タイトルなし)')}</a></strong>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">ID: ${safeId} | スラッグ: ${escapeHtml(item.slug || '-')}</div>
           </td>
-          <td><span class="wpis-badge wpis-badge-muted">${item.post_type}</span></td>
+          <td><span class="wpis-badge wpis-badge-muted">${escapeHtml(item.post_type)}</span></td>
           <td>${statusBadge}</td>
           <td><span class="${item.author_is_threat ? 'wpis-badge wpis-badge-danger' : ''}">${escapeHtml(item.author_name)}</span></td>
-          <td style="white-space:nowrap;font-size:12px;">${item.modified_date}</td>
+          <td style="white-space:nowrap;font-size:12px;">${escapeHtml(item.modified_date)}</td>
           <td>${reasonsHtml}</td>
         </tr>
       `;
     }).join('');
 
-    // Rebind check events
     bindPostCheckEvents();
   }
 
@@ -196,7 +197,6 @@ document.addEventListener('DOMContentLoaded', function () {
     btnTrashSelected.textContent = count > 0 ? `選択した${count}件をゴミ箱へ` : '選択した項目をゴミ箱へ';
   }
 
-  // Filter & Search events
   postsFilter.addEventListener('change', renderPosts);
   postsSearch.addEventListener('input', renderPosts);
 
@@ -214,9 +214,11 @@ document.addEventListener('DOMContentLoaded', function () {
     updatePostActionButtons();
   });
 
-  // Execute Post Action (Delete or Trash)
   async function executePostBulkAction(isPermanent) {
-    const selected = Array.from(postsBody.querySelectorAll('.wpis-post-check:checked')).map(c => parseInt(c.value, 10));
+    const selected = Array.from(postsBody.querySelectorAll('.wpis-post-check:checked'))
+      .map(c => parseInt(c.value, 10))
+      .filter(id => !isNaN(id) && id > 0);
+
     if (selected.length === 0) return;
 
     const actionText = isPermanent ? '完全に削除（復元不可）' : 'ゴミ箱へ移動';
@@ -240,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       alert(`${json.data.deleted_count} 件の処理が完了しました。`);
-      runScan(); // Re-scan
+      runScan();
     } catch (err) {
       console.error(err);
       alert('削除処理中に通信エラーが発生しました。');
@@ -253,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Render Users Table
   function renderUsers() {
     if (scanData.users.length === 0) {
-      usersBody.innerHTML = `<tr><td colspan="6" class="wpis-empty-state">ユーザーはいません</td></tr>`;
+      usersBody.innerHTML = `<tr><td colspan="7" class="wpis-empty-state">ユーザーはいません</td></tr>`;
       return;
     }
 
@@ -265,14 +267,16 @@ document.addEventListener('DOMContentLoaded', function () {
         rowClass = 'is-threat-danger';
       }
 
+      const safeId = parseInt(u.id, 10);
+
       return `
-        <tr class="${rowClass}" data-id="${u.id}">
-          <td style="text-align:center;"><input type="checkbox" class="wpis-user-check" value="${u.id}" data-threat="${u.is_threat}"></td>
+        <tr class="${rowClass}" data-id="${safeId}">
+          <td style="text-align:center;"><input type="checkbox" class="wpis-user-check" value="${safeId}" data-threat="${u.is_threat}"></td>
           <td>${badge}</td>
-          <td><strong>${escapeHtml(u.login)}</strong> (ID: ${u.id})</td>
+          <td><strong>${escapeHtml(u.login)}</strong> (ID: ${safeId})</td>
           <td>${escapeHtml(u.email)}</td>
-          <td><span class="wpis-badge wpis-badge-muted">${u.roles.join(', ')}</span></td>
-          <td>${u.registered}</td>
+          <td><span class="wpis-badge wpis-badge-muted">${escapeHtml(u.roles.join(', '))}</span></td>
+          <td>${escapeHtml(u.registered)}</td>
           <td>${u.threat_reasons.map(r => `<span class="wpis-reason-tag">${escapeHtml(r)}</span>`).join(' ') || '-'}</td>
         </tr>
       `;
@@ -301,7 +305,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Delete Users
   btnDeleteUsers.addEventListener('click', async () => {
-    const selected = Array.from(usersBody.querySelectorAll('.wpis-user-check:checked')).map(c => parseInt(c.value, 10));
+    const selected = Array.from(usersBody.querySelectorAll('.wpis-user-check:checked'))
+      .map(c => parseInt(c.value, 10))
+      .filter(id => !isNaN(id) && id > 0);
+
     if (selected.length === 0) return;
 
     if (!confirm(`【警告】選択された ${selected.length} 名のユーザーを削除します。\n※該当ユーザーが作成した投稿・下書き等のコンテンツもすべて同時に完全削除されます。\n\n本当に実行しますか？`)) {
@@ -359,12 +366,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function cleanCsv(str) {
     if (!str) return '';
-    return str.replace(/"/g, '""');
+    return String(str).replace(/"/g, '""');
   }
 
   function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   // Scan on mount
