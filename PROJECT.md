@@ -1,16 +1,23 @@
 # WP Incident Sweeper — プロジェクト定義
 
-**Current Version:** `2.20261015.11`
+**Current Version:** `2.20261015.12`
 
 ## 1. 概要
 WordPressサイト内の全コンテンツ（公開・下書き・ゴミ箱・非公開）および登録ユーザーを瞬時に一括スキャンし、改ざん痕跡（`Hacked by...`、`wp2_*` 等）を自動判定・安全に一括駆除する緊急セキュリティ・巡回ツール。マルチサイト（サイトネットワーク管理）環境にも完全対応し、傘下の全子サイトを横断スキャン可能。
 
 ## 2. バージョン体系（Qlypx方式）
 - 正本: `PROJECT.md` の `**Current Version:**`
-- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.11`）
+- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.12`）
 - 同期検証: `python3 scripts/check_version_sync.py`
 
 ## 3. Change Log
+
+### 2.20261015.12
+- **全ソースコードからの絵文字完全撤廃（Zero-Emoji Architecture）:**
+  - プラグイン本体（`wp-incident-sweeper.php`、`admin.js`、`admin.css`）および言語カタログ（`build_languages.py`、PO/MO/POT）からUnicode絵文字（🚨, ⚠️, ℹ️, 🎯, 🛡️, ✅等）を完全一掃。
+  - バッジ・理由ピルタグ・アラート・確認ダイアログのアイコン表示をインライン Lucide SVG（`svgAlert`, `svgLock`, `svgInfo`, `svgTarget`）および平文テキストに統一。
+  - WordPressコアの絵文字変換処理（`wp-emoji-release.min.js`）による画像リンク切れ（`[x]`）の発生原因を根本根絶。
+  - テストスイートに `test_zero_unicode_emojis_in_plugin` を新設し、実行コードの絵文字残存ゼロを自動保証。
 
 ### 2.20261015.11
 - **絵文字画像（s.w.org）リンク切れ防止 & バッジの完全Lucide SVG化:**

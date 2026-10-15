@@ -1,5 +1,20 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-15 | v2.20261015.12 全ソースコードからの絵文字完全撤廃（Zero-Emoji Architecture）
+- 🧠 思考:
+  1. テーブル内の各行やバッジ（`🔒 システム重要ページ`, `ℹ️ 下書き/ゴミ箱`, `🎯 マイKW検知`, `🚨 不審` 等）にUnicode絵文字が残っていたため、WordPressコアの絵文字画像変換スクリプト（`wp-emoji-release.min.js`）が `s.w.org` から画像を取得しようとして失敗し、環境によって壊れた画像 `[x]` アイコンが表示されていた。
+  2. 根本的な解決のためには、UIのヘッダーだけでなく、PHP・JavaScript・CSS・多言語カタログ（POT/PO/MO）に至るまで、全ソースコードからUnicode絵文字を1文字も漏らさず完全一掃（Zero-Emoji）し、すべてインライン Lucide SVG（`svgAlert`, `svgLock`, `svgInfo`, `svgTarget`）とプレーンテキストに統一する必要がある。
+- 🔨 やった:
+  1. `wp-incident-sweeper/wp-incident-sweeper.php`: `i18n` 配列、検知理由文字列、セレクトボックス option、説明モーダルからUnicode絵文字を一掃。
+  2. `wp-incident-sweeper/assets/js/admin.js`: `renderPosts()` および `renderUsers()` のバッジ生成、理由ピルタグ生成、確認ダイアログ（`confirm_delete_users`）、`alert` メッセージから絵文字を一掃し、インライン Lucide SVG に換装。
+  3. `scripts/build_languages.py`: 全5言語（`ja`, `en_US`, `id_ID`, `es_ES`, `de_DE`）の辞書キーおよび翻訳文字列から絵文字を完全除去し、POT/PO/MOバイナリを再コンパイル。
+  4. `scripts/test_sweeper.py`: `test_zero_unicode_emojis_in_plugin` を新設し、実行コード内のUnicode絵文字残存ゼロを自動検証（全17テストPASS）。
+  5. 全7ファイルを `2.20261015.12` に同期。
+- ❌ 失敗: `wp-incident-sweeper.php` 内の理由文字列に異体字セレクタ（`U+FE0F`）が1箇所残存していたが、テストスイートのUnicodeカテゴリ・コードポイント走査により即座に検出・完全修正。
+- ✅ 成功: `test_sweeper.py` 全17テスト完全合格、`check_version_sync.py` PASS。
+- 🧭 決定: プラグインコードベース全体で絵文字の使用を恒久的に禁止し、アイコン表現は100%インライン Lucide SVG に一元化する。
+- 🔗 参照: `PROJECT.md` / `spec/SPEC.md` / `wp-incident-sweeper/wp-incident-sweeper.php` / `wp-incident-sweeper/assets/js/admin.js`
+
 ## 2026-10-15 | v2.20261015.11 絵文字画像（s.w.org）リンク切れ防止 & バッジの完全Lucide SVG化
 - 🧠 思考:
   1. 一部環境（イントラネット、ローカル開発、厳格なCSP `img-src 'self'`、広告・トラッカー遮断環境）において、WordPress標準の絵文字置換スクリプト（`wp-emoji-release.min.js`）が `s.w.org` からの絵文字SVG取得に失敗・ブロックされる。

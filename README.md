@@ -3,7 +3,7 @@
 > **Emergency incident response, mass defacement auditing, and safe one-click cleanup plugin for WordPress (Single & Multisite).**  
 > WordPress サイト内の全投稿・固定ページ・ユーザーを一括スキャンし、改ざん痕跡・不正侵入を安全に特定・駆除する緊急セキュリティ監査ツール。
 
-**Version:** `2.20261015.11`  
+**Version:** `2.20261015.12`  
 📥 **[Download Latest Plugin (`wp-incident-sweeper.zip`)](https://github.com/chromatribe/wp-incident-sweeper/raw/main/wp-incident-sweeper.zip)**
 
 ---
