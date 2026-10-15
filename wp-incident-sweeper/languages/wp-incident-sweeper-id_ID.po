@@ -82,17 +82,17 @@ msgstr "Tidak ada pengguna mencurigakan"
 msgid "正常"
 msgstr "Normal"
 
-msgid "🚨 危険（即削除推奨）"
-msgstr "🚨 Kritis (Disarankan Segera Dihapus)"
+msgid "危険（即削除推奨）"
+msgstr "Kritis (Disarankan Segera Dihapus)"
 
-msgid "⚠️ 警告（要確認）"
-msgstr "⚠️ Peringatan (Perlu Ditinjau)"
+msgid "警告（要確認）"
+msgstr "Peringatan (Perlu Ditinjau)"
 
-msgid "ℹ️ 下書き/ゴミ箱"
-msgstr "ℹ️ Draf / Tong Sampah"
+msgid "下書き/ゴミ箱"
+msgstr "Draf / Tong Sampah"
 
-msgid "🚨 不審（即削除推奨）"
-msgstr "🚨 Mencurigakan (Disarankan Segera Dihapus)"
+msgid "不審（即削除推奨）"
+msgstr "Mencurigakan (Disarankan Segera Dihapus)"
 
 msgid "トップページ"
 msgstr "Halaman Depan"
@@ -118,8 +118,8 @@ msgstr "【安全確認: 記事の完全削除】\\n選択された %d 件のコ
 msgid "【確認: ゴミ箱への移動】\\n選択された %d 件のコンテンツをゴミ箱へ移動します。\\n（後から復元可能です）\\n\\n実行しますか？"
 msgstr "【確認: ゴミ箱への移動】\\n選択された %d 件のコンテンツをゴミ箱へ移動します。\\n（後から復元可能です）\\n\\n実行しますか？"
 
-msgid "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n🛡️ 巻き込み防止ガード:\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
-msgstr "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n🛡️ 巻き込み防止ガード:\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
+msgid "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n【巻き込み防止ガード】\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
+msgstr "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n【巻き込み防止ガード】\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
 
 msgid "選択した%d名の不審ユーザーを削除"
 msgstr "Hapus %d pengguna mencurigakan yang dipilih"
@@ -139,8 +139,8 @@ msgstr "Menyimpan..."
 msgid "マイKWを保存しました！"
 msgstr "Kata kunci kustom berhasil disimpan!"
 
-msgid "🎯 マイKW検知"
-msgstr "🎯 Cocok Kata Kunci Kustom"
+msgid "マイKW検知"
+msgstr "Cocok Kata Kunci Kustom"
 
 msgid "%d サイト"
 msgstr "%d situs"

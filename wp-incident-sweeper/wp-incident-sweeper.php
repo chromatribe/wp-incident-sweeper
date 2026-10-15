@@ -3,7 +3,7 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。単一サイトおよびマルチサイト（サイトネットワーク管理）の両方に完全対応し、コンテキストに応じてUIが自動最適化されます。
- * Version: 2.20261015.11
+ * Version: 2.20261015.12
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -21,7 +21,7 @@ class WP_Incident_Sweeper {
     const VERSION = '2.20261015.11';
     private static $instance = null;
 
-    // 🚨 危険度：高（改ざん・ハッカー署名・Webシェル痕跡）
+    // 危険度：高（改ざん・ハッカー署名・Webシェル痕跡）
     private $threat_keywords_high = array(
         'hacked by',
         'trenggalek',
@@ -48,7 +48,7 @@ class WP_Incident_Sweeper {
         'webshell',
     );
 
-    // ⚠️ 危険度：中（SEOスパム・カジノ・不正コード・隠しリンク）
+    // 危険度：中（SEOスパム・カジノ・不正コード・隠しリンク）
     private $threat_keywords_medium = array(
         // オンラインカジノ・ギャンブル系スパム
         'casino',
@@ -491,10 +491,10 @@ class WP_Incident_Sweeper {
                 'no_threats_found'       => __( '該当するコンテンツはありません（安全です）', 'wp-incident-sweeper' ),
                 'no_users_found'         => __( 'ユーザーはいません', 'wp-incident-sweeper' ),
                 'normal'                 => __( '正常', 'wp-incident-sweeper' ),
-                'threat_danger'          => __( '🚨 危険（即削除推奨）', 'wp-incident-sweeper' ),
-                'threat_warning'         => __( '⚠️ 警告（要確認）', 'wp-incident-sweeper' ),
-                'threat_muted'           => __( 'ℹ️ 下書き/ゴミ箱', 'wp-incident-sweeper' ),
-                'user_threat'            => __( '🚨 不審（即削除推奨）', 'wp-incident-sweeper' ),
+                'threat_danger'          => __( '危険（即削除推奨）', 'wp-incident-sweeper' ),
+                'threat_warning'         => __( '警告（要確認）', 'wp-incident-sweeper' ),
+                'threat_muted'           => __( '下書き/ゴミ箱', 'wp-incident-sweeper' ),
+                'user_threat'            => __( '不審（即削除推奨）', 'wp-incident-sweeper' ),
                 'protected_front'        => __( 'トップページ', 'wp-incident-sweeper' ),
                 'protected_posts'        => __( '投稿一覧ページ', 'wp-incident-sweeper' ),
                 'protected_privacy'      => __( 'プライバシーポリシー', 'wp-incident-sweeper' ),
@@ -503,14 +503,14 @@ class WP_Incident_Sweeper {
                 'edit'                   => __( '編集', 'wp-incident-sweeper' ),
                 'confirm_delete_posts'   => __( "【安全確認: 記事の完全削除】\n選択された %d 件のコンテンツをデータベースから【完全に消去】します。\n\n※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\n\n本当に実行しますか？", 'wp-incident-sweeper' ),
                 'confirm_trash_posts'    => __( "【確認: ゴミ箱への移動】\n選択された %d 件のコンテンツをゴミ箱へ移動します。\n（後から復元可能です）\n\n実行しますか？", 'wp-incident-sweeper' ),
-                'confirm_delete_users'   => __( "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n🛡️ 巻き込み防止ガード:\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？", 'wp-incident-sweeper' ),
+                'confirm_delete_users'   => __( "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n【巻き込み防止ガード】\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？", 'wp-incident-sweeper' ),
                 'delete_users_btn'       => __( '選択した%d名の不審ユーザーを削除', 'wp-incident-sweeper' ),
                 'delete_users_btn_empty' => __( '選択した不審ユーザーを削除', 'wp-incident-sweeper' ),
                 'no_export_data'         => __( 'エクスポートするスキャンデータがありません。先にスキャンを実行してください。', 'wp-incident-sweeper' ),
                 'sync_in_progress'       => __( '同期中...', 'wp-incident-sweeper' ),
                 'save_in_progress'       => __( '保存中...', 'wp-incident-sweeper' ),
                 'my_kw_saved'            => __( 'マイKWを保存しました！', 'wp-incident-sweeper' ),
-                'my_kw_badge'            => __( '🎯 マイKW検知', 'wp-incident-sweeper' ),
+                'my_kw_badge'            => __( 'マイKW検知', 'wp-incident-sweeper' ),
                 'sites_count_suffix'     => __( '%d サイト', 'wp-incident-sweeper' ),
                 'delete_posts_done'      => __( "%d 件のコンテンツを処理しました。\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）", 'wp-incident-sweeper' ),
                 'delete_users_done'      => __( '%d 名のユーザーの削除が完了しました。', 'wp-incident-sweeper' ),
@@ -621,7 +621,7 @@ class WP_Incident_Sweeper {
                 foreach ( $my_keywords as $mkw ) {
                     if ( mb_strpos( $u_text, $mkw ) !== false ) {
                         $is_threat = true;
-                        $reasons[] = '🎯 マイKW検知: "' . esc_html( $mkw ) . '"';
+                        $reasons[] = 'マイKW検知: "' . esc_html( $mkw ) . '"';
                         break;
                     }
                 }
@@ -777,19 +777,19 @@ class WP_Incident_Sweeper {
                     $reasons  = array();
 
                     if ( $is_protected ) {
-                        $reasons[] = '🔒 システム重要ページ';
+                        $reasons[] = 'システム重要ページ';
                     }
 
                     if ( in_array( $author_id, $threat_user_ids, true ) ) {
                         $severity = 'high';
-                        $reasons[] = '🚨 不審ユーザー作成記事 (' . esc_html( $author_name ) . ')';
+                        $reasons[] = '不審ユーザー作成記事 (' . esc_html( $author_name ) . ')';
                     }
 
                     // 本文内の改ざんシグネチャ検知（具体的な単語を表示）
                     if ( isset( $high_matched_words[ $post_id ] ) && ! empty( $high_matched_words[ $post_id ] ) ) {
                         $severity = 'high';
                         $words_str = implode( '", "', array_slice( $high_matched_words[ $post_id ], 0, 3 ) );
-                        $reasons[] = '🚨 本文改ざん痕跡: "' . esc_html( $words_str ) . '"';
+                        $reasons[] = '本文改ざん痕跡: "' . esc_html( $words_str ) . '"';
                     }
 
                     // タイトル・スラッグ内の危険キーワード検知（具体的な単語を表示）
@@ -797,7 +797,7 @@ class WP_Incident_Sweeper {
                     foreach ( $kw_high as $kw ) {
                         if ( mb_strpos( $title_slug_text, $kw ) !== false ) {
                             $severity = 'high';
-                            $reasons[] = '🚨 タイトル改ざん: "' . esc_html( $kw ) . '"';
+                            $reasons[] = 'タイトル改ざん: "' . esc_html( $kw ) . '"';
                             break;
                         }
                     }
@@ -807,35 +807,35 @@ class WP_Incident_Sweeper {
                         if ( isset( $med_matched_words[ $post_id ] ) && ! empty( $med_matched_words[ $post_id ] ) ) {
                             $severity = 'medium';
                             $words_str = implode( '", "', array_slice( $med_matched_words[ $post_id ], 0, 3 ) );
-                            $reasons[] = '⚠️ 本文スパム/不審コード: "' . esc_html( $words_str ) . '"';
+                            $reasons[] = '本文スパム/不審コード: "' . esc_html( $words_str ) . '"';
                         } else {
                             foreach ( $kw_med as $kw ) {
                                 if ( mb_strpos( $title_slug_text, $kw ) !== false ) {
                                     $severity = 'medium';
-                                    $reasons[] = '⚠️ タイトルスパム: "' . esc_html( $kw ) . '"';
+                                    $reasons[] = 'タイトルスパム: "' . esc_html( $kw ) . '"';
                                     break;
                                 }
                             }
                         }
                     }
 
-                    // 🎯 マイKW検知（本文）
+                    // マイKW検知（本文）
                     if ( isset( $my_matched_words[ $post_id ] ) && ! empty( $my_matched_words[ $post_id ] ) ) {
                         if ( 'clean' === $severity || 'low' === $severity ) {
                             $severity = 'high';
                         }
                         $words_str = implode( '", "', array_slice( $my_matched_words[ $post_id ], 0, 3 ) );
-                        $reasons[] = '🎯 マイKW検知(本文): "' . esc_html( $words_str ) . '"';
+                        $reasons[] = 'マイKW検知(本文): "' . esc_html( $words_str ) . '"';
                     }
 
-                    // 🎯 マイKW検知（タイトル・スラッグ）
+                    // マイKW検知（タイトル・スラッグ）
                     if ( ! empty( $my_keywords ) ) {
                         foreach ( $my_keywords as $mkw ) {
                             if ( mb_strpos( $title_slug_text, $mkw ) !== false ) {
                                 if ( 'clean' === $severity || 'low' === $severity ) {
                                     $severity = 'high';
                                 }
-                                $reasons[] = '🎯 マイKW検知(タイトル): "' . esc_html( $mkw ) . '"';
+                                $reasons[] = 'マイKW検知(タイトル): "' . esc_html( $mkw ) . '"';
                                 break;
                             }
                         }
@@ -843,7 +843,7 @@ class WP_Incident_Sweeper {
 
                     if ( $severity === 'clean' && in_array( $status, array( 'draft', 'trash', 'pending', 'private' ), true ) ) {
                         $severity = 'low';
-                        $reasons[] = 'ℹ️ 非公開/下書き/ゴミ箱';
+                        $reasons[] = '非公開/下書き/ゴミ箱';
                     }
 
                     if ( $severity === 'high' || $severity === 'medium' ) {
@@ -1253,8 +1253,8 @@ class WP_Incident_Sweeper {
                         <?php endif; ?>
                         <select class="wpis-filter-select" id="wpis-posts-filter">
                             <option value="all">すべてのステータス</option>
-                            <option value="threat_high">🚨 危険のみ（Hacked by / 不審者作成）</option>
-                            <option value="threat_all">⚠️ 危険＋警告（全検知項目）</option>
+                            <option value="threat_high">[危険] 改ざん痕跡 / 不審者作成のみ</option>
+                            <option value="threat_all">[危険・警告] 全検知項目</option>
                             <option value="draft_trash">下書き・ゴミ箱・非公開のみ</option>
                         </select>
                         <input type="text" class="wpis-search-input" id="wpis-posts-search" placeholder="タイトルや作成者で絞り込み...">
@@ -1301,11 +1301,11 @@ class WP_Incident_Sweeper {
                     <div class="wpis-filter-group">
                         <span style="font-size:13px;color:#64748b;">
                             <?php if ( is_multisite() && ! $is_network ) : ?>
-                                ℹ️ <strong>ユーザー監査（閲覧のみ）:</strong> マルチサイト構成では、ユーザーの完全削除はサイトネットワーク管理者（特権管理者）画面（<a href="<?php echo esc_url( network_admin_url( 'admin.php?page=wp-incident-sweeper' ) ); ?>" style="color:#0284c7;font-weight:bold;text-decoration:underline;">/wp-admin/network/</a>）からのみ実行可能です。
+                                <span style="display:inline-flex;align-items:center;gap:4px;"><svg class="wpis-lucide" viewBox="0 0 24 24" width="14" height="14" style="color:#0284c7;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> <strong>ユーザー監査（閲覧のみ）:</strong> マルチサイト構成では、ユーザーの完全削除はサイトネットワーク管理者（特権管理者）画面（<a href="<?php echo esc_url( network_admin_url( 'admin.php?page=wp-incident-sweeper' ) ); ?>" style="color:#0284c7;font-weight:bold;text-decoration:underline;">/wp-admin/network/</a>）からのみ実行可能です。</span>
                             <?php elseif ( $is_network ) : ?>
-                                🛡️ <strong>マルチサイト安全保護:</strong> ネットワーク管理画面から不審ユーザーを削除すると、全傘下サイトに散らばった不正下書きが一括完全削除され、公開中の正規記事は安全に保護されます。
+                                <span style="display:inline-flex;align-items:center;gap:4px;"><svg class="wpis-lucide" viewBox="0 0 24 24" width="14" height="14" style="color:#0284c7;"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg> <strong>マルチサイト安全保護:</strong> ネットワーク管理画面から不審ユーザーを削除すると、全傘下サイトに散らばった不正下書きが一括完全削除され、公開中の正規記事は安全に保護されます。</span>
                             <?php else : ?>
-                                🛡️ <strong>安全保護機能:</strong> 不審ユーザー削除時、下書き等の不正記事のみ消去され、公開中の正規記事は現在の管理者に安全に引き継がれます。
+                                <span style="display:inline-flex;align-items:center;gap:4px;"><svg class="wpis-lucide" viewBox="0 0 24 24" width="14" height="14" style="color:#0284c7;"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg> <strong>安全保護機能:</strong> 不審ユーザー削除時、下書き等の不正記事のみ消去され、公開中の正規記事は現在の管理者に安全に引き継がれます。</span>
                             <?php endif; ?>
                         </span>
                     </div>
@@ -1342,14 +1342,14 @@ class WP_Incident_Sweeper {
             <div class="wpis-panel" id="wpis-panel-guide">
                 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:24px;line-height:1.7;">
                     <?php if ( $is_network ) : ?>
-                        <h2 style="font-size:16px;margin-top:0;">🌐 マルチサイト（サイトネットワーク）での運用手順</h2>
+                        <h2 style="font-size:16px;margin-top:0;">マルチサイト（サイトネットワーク）での運用手順</h2>
                         <ol style="padding-left:20px;font-size:13px;color:#334155;">
                             <li><strong>全傘下サイトの一括横断スキャン:</strong> 「全サイト横断スキャン実行」を押すと、配下のすべての子サイトを全自動で巡回クロールします。</li>
                             <li><strong>サイト別フィルター:</strong> 投稿一覧上部の「全傘下サイト」から特定の子サイトに絞り込んで確認できます。</li>
                             <li><strong>一括駆除:</strong> 危険なアイテムをチェックして削除すると、該当する子サイトのDBを特定して安全に消去されます。</li>
                         </ol>
                     <?php else : ?>
-                        <h2 style="font-size:16px;margin-top:0;">🛡️ 巡回時の確認ポイントと運用手順</h2>
+                        <h2 style="font-size:16px;margin-top:0;">巡回時の確認ポイントと運用手順</h2>
                         <ol style="padding-left:20px;font-size:13px;color:#334155;">
                             <li><strong>自動スキャン:</strong> 画面を開くとサイト内の全コンテンツとユーザーが自動でクロールされます。</li>
                             <li><strong>危険項目を一括選択:</strong> 改ざん記事（<code>Hacked by...</code>）や不審ユーザー作成記事があれば、ボタン1つで一括チェックが入ります。</li>
@@ -1357,7 +1357,7 @@ class WP_Incident_Sweeper {
                         </ol>
                     <?php endif; ?>
 
-                    <h3 style="font-size:15px;margin-top:24px;">🛡️ 巻き込み事故を防止する「5つの多重安全ガード」</h3>
+                    <h3 style="font-size:15px;margin-top:24px;">巻き込み事故を防止する「5つの多重安全ガード」</h3>
                     <ul style="padding-left:20px;font-size:13px;color:#334155;">
                         <li><strong>ガード1（システム重要ページの完全保護）：</strong> トップページ、ブログ一覧、プライバシーポリシーページは削除対象から強制除外。</li>
                         <li><strong>ガード2（許可された投稿タイプのみ対象）：</strong> 投稿、固定ページ、公開カスタム投稿タイプのみが対象。画像実体やメニューは保護。</li>
@@ -1457,7 +1457,7 @@ class WP_Incident_Sweeper {
                     </div>
                     <p style="font-size:13px;color:#475569;margin-bottom:12px;line-height:1.5;">
                         あなたが個別に監視・検知したいキーワードを登録できます。<br>
-                        登録したキーワードは全記事のタイトル・本文・ユーザー名から自動検知され、一覧上に <code style="color:#6b21a8;background:#f3e8ff;padding:1px 5px;border-radius:3px;">🎯 マイKW検知</code> バッジで分かりやすく表示されます。
+                        登録したキーワードは全記事のタイトル・本文・ユーザー名から自動検知され、一覧上に <code style="color:#6b21a8;background:#f3e8ff;padding:1px 5px;border-radius:3px;">マイKW検知</code> バッジで分かりやすく表示されます。
                     </p>
                     <div style="margin-bottom:16px;">
                         <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;">

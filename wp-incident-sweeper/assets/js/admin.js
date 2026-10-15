@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', function () {
     return format.replace(/%[sd]/g, () => (args[i++] !== undefined ? args[i - 1] : ''));
   }
 
+  // Inline Lucide SVG Icons (Zero unicode emoji dependency, zero broken image risks)
+  const svgAlert = '<svg class="wpis-lucide" viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  const svgLock = '<svg class="wpis-lucide" viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+  const svgInfo = '<svg class="wpis-lucide" viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+  const svgTarget = '<svg class="wpis-lucide" viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>';
+
   let scanData = {
     posts: [],
     users: [],
@@ -198,17 +204,17 @@ document.addEventListener('DOMContentLoaded', function () {
       let severityBadge = `<span class="wpis-badge wpis-badge-success">${escapeHtml(__( 'normal', '正常' ))}</span>`;
       let rowClass = '';
       if (item.severity === 'high') {
-        severityBadge = `<span class="wpis-badge wpis-badge-danger">${escapeHtml(__( 'threat_danger', '🚨 危険（即削除推奨）' ))}</span>`;
+        severityBadge = `<span class="wpis-badge wpis-badge-danger">${svgAlert}${escapeHtml(__( 'threat_danger', '危険（即削除推奨）' ))}</span>`;
         rowClass = 'is-threat-danger';
       } else if (item.severity === 'medium') {
-        severityBadge = `<span class="wpis-badge wpis-badge-warning">${escapeHtml(__( 'threat_warning', '⚠️ 警告（要確認）' ))}</span>`;
+        severityBadge = `<span class="wpis-badge wpis-badge-warning">${svgAlert}${escapeHtml(__( 'threat_warning', '警告（要確認）' ))}</span>`;
         rowClass = 'is-threat-warning';
       } else if (item.severity === 'low') {
-        severityBadge = `<span class="wpis-badge wpis-badge-muted">${escapeHtml(__( 'threat_muted', 'ℹ️ 下書き/ゴミ箱' ))}</span>`;
+        severityBadge = `<span class="wpis-badge wpis-badge-muted">${svgInfo}${escapeHtml(__( 'threat_muted', '下書き/ゴミ箱' ))}</span>`;
       }
 
       if (item.is_protected) {
-        severityBadge = `<span class="wpis-badge wpis-badge-muted" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">🔒 ${escapeHtml(__( 'protected_notice', 'システム重要ページのため削除保護' ))}</span>`;
+        severityBadge = `<span class="wpis-badge wpis-badge-muted" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">${svgLock}${escapeHtml(__( 'protected_notice', 'システム重要ページのため削除保護' ))}</span>`;
       }
 
       const statusMap = {
@@ -220,20 +226,20 @@ document.addEventListener('DOMContentLoaded', function () {
       };
       const statusBadge = statusMap[item.status] || `<span class="wpis-badge wpis-badge-muted">${escapeHtml(item.status)}</span>`;
 
-      // 視認性の高い検知理由ピルバッジの生成
+      // 視認性の高い検知理由ピルバッジの生成（Lucide SVG アイコン統合）
       const reasonsBadgesHtml = item.reasons.length > 0
         ? item.reasons.map(r => {
-            let bg = '#fee2e2', color = '#991b1b', border = '#fecaca'; // danger
-            if (r.startsWith('🎯')) {
-              bg = '#faf5ff'; color = '#6b21a8'; border = '#e9d5ff'; // My KW (purple)
-            } else if (r.startsWith('⚠️')) {
-              bg = '#fef3c7'; color = '#92400e'; border = '#fde68a'; // warning
-            } else if (r.startsWith('🔒')) {
-              bg = '#e0f2fe'; color = '#0369a1'; border = '#bae6fd'; // info
-            } else if (r.startsWith('ℹ️') || r.startsWith('非公開')) {
-              bg = '#f1f5f9'; color = '#475569'; border = '#e2e8f0'; // muted
+            let bg = '#fee2e2', color = '#991b1b', border = '#fecaca', icon = svgAlert; // danger default
+            if (r.includes('マイKW')) {
+              bg = '#faf5ff'; color = '#6b21a8'; border = '#e9d5ff'; icon = svgTarget; // My KW (purple)
+            } else if (r.includes('スパム') || r.includes('不審コード')) {
+              bg = '#fef3c7'; color = '#92400e'; border = '#fde68a'; icon = svgAlert; // warning
+            } else if (r.includes('システム重要ページ') || r.includes('特権管理者') || r.includes('保護')) {
+              bg = '#e0f2fe'; color = '#0369a1'; border = '#bae6fd'; icon = svgLock; // info/protected
+            } else if (r.includes('下書き') || r.includes('ゴミ箱') || r.includes('非公開')) {
+              bg = '#f1f5f9'; color = '#475569'; border = '#e2e8f0'; icon = svgInfo; // muted
             }
-            return `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:${bg};color:${color};border:1px solid ${border};line-height:1.4;">${escapeHtml(r)}</span>`;
+            return `<span style="display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:${bg};color:${color};border:1px solid ${border};line-height:1.4;">${icon}<span>${escapeHtml(r)}</span></span>`;
           }).join('')
         : '<span style="color:#94a3b8;font-size:12px;">-</span>';
 
@@ -378,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function () {
       let badge = `<span class="wpis-badge wpis-badge-success">${escapeHtml(__( 'normal', '正常' ))}</span>`;
       let rowClass = '';
       if (u.is_threat) {
-        badge = `<span class="wpis-badge wpis-badge-danger">${escapeHtml(__( 'user_threat', '🚨 不審（即削除推奨）' ))}</span>`;
+        badge = `<span class="wpis-badge wpis-badge-danger">${svgAlert}${escapeHtml(__( 'user_threat', '不審（即削除推奨）' ))}</span>`;
         rowClass = 'is-threat-danger';
       }
 
@@ -388,10 +394,14 @@ document.addEventListener('DOMContentLoaded', function () {
       const userReasonsHtml = u.threat_reasons.length > 0
         ? u.threat_reasons.map(r => {
             let bg = '#fee2e2', color = '#991b1b', border = '#fecaca';
-            if (r.startsWith('🎯')) {
+            let icon = svgAlert;
+            if (r.includes('マイKW')) {
               bg = '#faf5ff'; color = '#6b21a8'; border = '#e9d5ff';
+              icon = svgTarget;
+            } else if (r.includes('特権管理者') || r.includes('管理者')) {
+              icon = svgLock;
             }
-            return `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:${bg};color:${color};border:1px solid ${border};line-height:1.4;">${escapeHtml(r)}</span>`;
+            return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:${bg};color:${color};border:1px solid ${border};line-height:1.4;">${icon}${escapeHtml(r)}</span>`;
           }).join('')
         : '<span style="color:#94a3b8;font-size:12px;">-</span>';
 
@@ -451,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const defaultUserConfirm = `【安全確認: 不審ユーザーの削除】\n` +
                 `選択された %d 名の不審ユーザーを削除します。\n\n` +
-                `🛡️ 巻き込み防止ガード:\n` +
+                `【巻き込み防止ガード】\n` +
                 `・不正な下書き・ゴミ箱記事のみが完全消去されます。\n` +
                 `・公開中の正規記事は安全に保護されます。\n\n` +
                 `実行しますか？`;
@@ -559,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const data = json.data;
         updateSignatureDisplay(data.version, data.counts.high, data.counts.medium, data.updated_at);
-        alert(`✅ ${data.message}\nバージョン: ${data.version}\n危険KW: ${data.counts.high}件 / 警告KW: ${data.counts.medium}件`);
+        alert(`[同期完了] ${data.message}\nバージョン: ${data.version}\n危険KW: ${data.counts.high}件 / 警告KW: ${data.counts.medium}件`);
         // 最新キーワードで即時再スキャン
         runScan();
       } catch (err) {
@@ -629,7 +639,7 @@ document.addEventListener('DOMContentLoaded', function () {
           const count = json.data?.count || 0;
           updateMyKeywordsCount(count);
           modalMyKw.style.display = 'none';
-          alert(`✅ ${json.data?.message || 'マイKWを保存しました！'}（登録数: ${count}件）\n最新のキーワード設定で再スキャンを実行します。`);
+          alert(`[保存完了] ${json.data?.message || 'マイKWを保存しました！'}（登録数: ${count}件）\n最新のキーワード設定で再スキャンを実行します。`);
           runScan();
         } catch (err) {
           console.error(err);

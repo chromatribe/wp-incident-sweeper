@@ -88,10 +88,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "該当するコンテンツはありません（安全です）": "No matching content found (Clean & Safe)",
         "ユーザーはいません": "No suspicious users found",
         "正常": "Normal",
-        "🚨 危険（即削除推奨）": "🚨 Critical (Immediate Deletion Recommended)",
-        "⚠️ 警告（要確認）": "⚠️ Warning (Review Required)",
-        "ℹ️ 下書き/ゴミ箱": "ℹ️ Draft / Trash",
-        "🚨 不審（即削除推奨）": "🚨 Suspicious (Immediate Deletion Recommended)",
+        "危険（即削除推奨）": "Critical (Immediate Deletion Recommended)",
+        "警告（要確認）": "Warning (Review Required)",
+        "下書き/ゴミ箱": "Draft / Trash",
+        "不審（即削除推奨）": "Suspicious (Immediate Deletion Recommended)",
         "トップページ": "Front Page",
         "投稿一覧ページ": "Posts Page",
         "プライバシーポリシー": "Privacy Policy",
@@ -106,9 +106,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "【確認: ゴミ箱への移動】\n選択された %d 件のコンテンツをゴミ箱へ移動します。\n（後から復元可能です）\n\n実行しますか？": (
             "[Confirmation: Move to Trash]\nMove %d selected item(s) to the Trash.\n(Items can be restored later)\n\nProceed?"
         ),
-        "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n🛡️ 巻き込み防止ガード:\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？": (
+        "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n【巻き込み防止ガード】\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？": (
             "[Confirmation: Delete Suspicious Users]\nDelete %d selected suspicious user(s).\n\n"
-            "🛡️ Safety Guard:\n- Only unauthorized draft or trashed posts will be purged.\n- Published legitimate posts remain safely protected.\n\n"
+            "Safety Guard:\n- Only unauthorized draft or trashed posts will be purged.\n- Published legitimate posts remain safely protected.\n\n"
             "Proceed?"
         ),
         "選択した%d名の不審ユーザーを削除": "Delete %d selected suspicious user(s)",
@@ -117,7 +117,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "同期中...": "Syncing...",
         "保存中...": "Saving...",
         "マイKWを保存しました！": "Custom keywords saved successfully!",
-        "🎯 マイKW検知": "🎯 Custom Keyword Match",
+        "マイKW検知": "Custom Keyword Match",
         "%d サイト": "%d site(s)",
         "%d 件のコンテンツを処理しました。\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）": "Processed %d content item(s).\n(Purged: %d / Trashed: %d / Skipped: %d)",
         "%d 名のユーザーの削除が完了しました。": "Successfully deleted %d user(s).",
@@ -167,10 +167,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "該当するコンテンツはありません（安全です）": "Tidak ada konten mencurigakan yang ditemukan (Aman)",
         "ユーザーはいません": "Tidak ada pengguna mencurigakan",
         "正常": "Normal",
-        "🚨 危険（即削除推奨）": "🚨 Kritis (Disarankan Segera Dihapus)",
-        "⚠️ 警告（要確認）": "⚠️ Peringatan (Perlu Ditinjau)",
-        "ℹ️ 下書き/ゴミ箱": "ℹ️ Draf / Tong Sampah",
-        "🚨 不審（即削除推奨）": "🚨 Mencurigakan (Disarankan Segera Dihapus)",
+        "危険（即削除推奨）": "Kritis (Disarankan Segera Dihapus)",
+        "警告（要確認）": "Peringatan (Perlu Ditinjau)",
+        "下書き/ゴミ箱": "Draf / Tong Sampah",
+        "不審（即削除推奨）": "Mencurigakan (Disarankan Segera Dihapus)",
         "トップページ": "Halaman Depan",
         "投稿一覧ページ": "Halaman Pos",
         "プライバシーポリシー": "Kebijakan Privasi",
@@ -185,9 +185,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "【確認: ゴミ箱への移動】\n選択された %d 件のコンテンツをゴミ箱へ移動します。\n（後から復元可能です）\n\n実行しますか？": (
             "[Konfirmasi: Pindahkan ke Tong Sampah]\nMemindahkan %d konten yang dipilih ke Tong Sampah.\n(Dapat dipulihkan kembali nanti)\n\nLanjutkan?"
         ),
-        "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n🛡️ 巻き込み防止ガード:\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？": (
+        "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n【巻き込み防止ガード】\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？": (
             "[Konfirmasi: Hapus Pengguna Mencurigakan]\nMenghapus %d pengguna mencurigakan yang dipilih.\n\n"
-            "🛡️ Perlindungan Keamanan:\n- Hanya pos draf atau sampah tidak sah yang akan dihapus permanen.\n- Pos sah yang telah diterbitkan tetap terlindungi aman.\n\n"
+            "Perlindungan Keamanan:\n- Hanya pos draf atau sampah tidak sah yang akan dihapus permanen.\n- Pos sah yang telah diterbitkan tetap terlindungi aman.\n\n"
             "Lanjutkan?"
         ),
         "選択した%d名の不審ユーザーを削除": "Hapus %d pengguna mencurigakan yang dipilih",
@@ -196,7 +196,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "同期中...": "Menyinkronkan...",
         "保存中...": "Menyimpan...",
         "マイKWを保存しました！": "Kata kunci kustom berhasil disimpan!",
-        "🎯 マイKW検知": "🎯 Cocok Kata Kunci Kustom",
+        "マイKW検知": "Cocok Kata Kunci Kustom",
         "%d サイト": "%d situs",
         "%d 件のコンテンツを処理しました。\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）": "Memproses %d konten.\n(Dihapus Permanen: %d / Dibuang ke Sampah: %d / Dilewati: %d)",
         "%d 名のユーザーの削除が完了しました。": "Berhasil menghapus %d pengguna.",
@@ -246,10 +246,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "該当するコンテンツはありません（安全です）": "No se encontraron contenidos sospechosos (Sitio seguro)",
         "ユーザーはいません": "No se encontraron usuarios sospechosos",
         "正常": "Normal",
-        "🚨 危険（即削除推奨）": "🚨 Crítico (Se recomienda eliminación inmediata)",
-        "⚠️ 警告（要確認）": "⚠️ Advertencia (Requiere revisión)",
-        "ℹ️ 下書き/ゴミ箱": "ℹ️ Borrador / Papelera",
-        "🚨 不審（即削除推奨）": "🚨 Sospechoso (Se recomienda eliminación inmediata)",
+        "危険（即削除推奨）": "Crítico (Se recomienda eliminación inmediata)",
+        "警告（要確認）": "Advertencia (Requiere revisión)",
+        "下書き/ゴミ箱": "Borrador / Papelera",
+        "不審（即削除推奨）": "Sospechoso (Se recomienda eliminación inmediata)",
         "トップページ": "Página de inicio",
         "投稿一覧ページ": "Página de entradas",
         "プライバシーポリシー": "Política de privacidad",
@@ -264,9 +264,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "【確認: ゴミ箱への移動】\n選択された %d 件のコンテンツをゴミ箱へ移動します。\n（後から復元可能です）\n\n実行しますか？": (
             "[Confirmación: Mover a la papelera]\nMover %d elemento(s) seleccionado(s) a la papelera.\n(Se pueden restaurar posteriormente)\n\n¿Continuar?"
         ),
-        "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n🛡️ 巻き込み防止ガード:\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？": (
+        "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n【巻き込み防止ガード】\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？": (
             "[Confirmación: Eliminar usuarios sospechosos]\nEliminar %d usuario(s) sospechoso(s) seleccionado(s).\n\n"
-            "🛡️ Protección de seguridad:\n- Solo se eliminarán permanentemente los borradores o entradas no autorizadas en la papelera.\n- Las publicaciones legítimas publicadas permanecerán protegidas.\n\n"
+            "Protección de seguridad:\n- Solo se eliminarán permanentemente los borradores o entradas no autorizadas en la papelera.\n- Las publicaciones legítimas publicadas permanecerán protegidas.\n\n"
             "¿Continuar?"
         ),
         "選択した%d名の不審ユーザーを削除": "Eliminar %d usuario(s) sospechoso(s) seleccionado(s)",
@@ -275,7 +275,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "同期中...": "Sincronizando...",
         "保存中...": "Guardando...",
         "マイKWを保存しました！": "¡Palabras clave personalizadas guardadas con éxito!",
-        "🎯 マイKW検知": "🎯 Coincidencia de palabra clave personalizada",
+        "マイKW検知": "Coincidencia de palabra clave personalizada",
         "%d サイト": "%d sitio(s)",
         "%d 件のコンテンツを処理しました。\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）": "Se procesaron %d contenido(s).\n(Eliminados definitivamente: %d / A la papelera: %d / Omitidos: %d)",
         "%d 名のユーザーの削除が完了しました。": "Se eliminaron correctamente %d usuario(s).",
@@ -325,10 +325,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "該当するコンテンツはありません（安全です）": "Keine verdächtigen Inhalte gefunden (Sicher)",
         "ユーザーはいません": "Keine verdächtigen Benutzer gefunden",
         "正常": "Normal",
-        "🚨 危険（即削除推奨）": "🚨 Kritisch (Sofortige Löschung empfohlen)",
-        "⚠️ 警告（要確認）": "⚠️ Warnung (Prüfung erforderlich)",
-        "ℹ️ 下書き/ゴミ箱": "ℹ️ Entwurf / Papierkorb",
-        "🚨 不審（即削除推奨）": "🚨 Verdächtig (Sofortige Löschung empfohlen)",
+        "危険（即削除推奨）": "Kritisch (Sofortige Löschung empfohlen)",
+        "警告（要確認）": "Warnung (Prüfung erforderlich)",
+        "下書き/ゴミ箱": "Entwurf / Papierkorb",
+        "不審（即削除推奨）": "Verdächtig (Sofortige Löschung empfohlen)",
         "トップページ": "Startseite",
         "投稿一覧ページ": "Beitragsseite",
         "プライバシーポリシー": "Datenschutzerklärung",
@@ -343,9 +343,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "【確認: ゴミ箱への移動】\n選択された %d 件のコンテンツをゴミ箱へ移動します。\n（後から復元可能です）\n\n実行しますか？": (
             "[Bestätigung: In den Papierkorb verschieben]\n%d ausgewählte Inhalte in den Papierkorb verschieben.\n(Kann später wiederhergestellt werden)\n\nFortfahren?"
         ),
-        "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n🛡️ 巻き込み防止ガード:\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？": (
+        "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n【巻き込み防止ガード】\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？": (
             "[Sicherheitsabfrage: Verdächtige Benutzer löschen]\n%d ausgewählte verdächtige Benutzer löschen.\n\n"
-            "🛡️ Schutzfunktion:\n- Nur unbefugte Entwürfe oder Papierkorb-Beiträge werden endgültig gelöscht.\n- Veröffentlichte reguläre Beiträge bleiben geschützt.\n\n"
+            "Schutzfunktion:\n- Nur unbefugte Entwürfe oder Papierkorb-Beiträge werden endgültig gelöscht.\n- Veröffentlichte reguläre Beiträge bleiben geschützt.\n\n"
             "Fortfahren?"
         ),
         "選択した%d名の不審ユーザーを削除": "%d ausgewählte verdächtige Benutzer löschen",
@@ -354,7 +354,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "同期中...": "Synchronisiere...",
         "保存中...": "Speichern...",
         "マイKWを保存しました！": "Eigene Suchbegriffe erfolgreich gespeichert!",
-        "🎯 マイKW検知": "🎯 Eigener Suchbegriff Treffer",
+        "マイKW検知": "Eigener Suchbegriff Treffer",
         "%d サイト": "%d Website(s)",
         "%d 件のコンテンツを処理しました。\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）": "%d Inhalt(e) verarbeitet.\n(Endgültig gelöscht: %d / Papierkorb: %d / Übersprungen: %d)",
         "%d 名のユーザーの削除が完了しました。": "%d Benutzer erfolgreich gelöscht.",

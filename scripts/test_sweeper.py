@@ -172,7 +172,7 @@ def test_my_keywords_feature(php_text: str, js_text: str):
     assert "set_my_keywords" in php_text, "PHP must implement set_my_keywords"
     assert "ajax_save_my_keywords" in php_text, "PHP must implement ajax_save_my_keywords"
     assert "wpis_my_keywords" in php_text, "PHP must use wpis_my_keywords user meta key"
-    assert "🎯 マイKW検知" in php_text, "PHP scan must tag matched posts with 🎯 マイKW検知"
+    assert "マイKW検知" in php_text, "PHP scan must tag matched posts with マイKW検知"
 
     # JS側
     assert "wpis-btn-my-kw" in js_text, "JS must handle wpis-btn-my-kw"
@@ -213,7 +213,7 @@ def test_js_execution():
               success: true,
               data: {
                 posts: [
-                  { id: 10, blog_id: 1, blog_name: 'Subsite 1', title: 'Test 1', slug: 'test1', post_type: 'post', status: 'publish', author_id: 1, author_name: 'Admin', modified_date: '2026-10-15', severity: 'clean', is_protected: false, reasons: ['🚨 本文改ざん痕跡: "hacked by"'] }
+                  { id: 10, blog_id: 1, blog_name: 'Subsite 1', title: 'Test 1', slug: 'test1', post_type: 'post', status: 'publish', author_id: 1, author_name: 'Admin', modified_date: '2026-10-15', severity: 'clean', is_protected: false, reasons: ['本文改ざん痕跡: "hacked by"'] }
                 ],
                 users: [{ id: 1, login: 'admin', name: 'Admin', email: 'a@b.com', roles: ['administrator'], registered: '2026-10-15', is_threat: false, threat_reasons: [] }],
                 sites: [{ id: 1, name: 'Site 1', url: 'http://localhost' }],
@@ -328,10 +328,34 @@ def test_emoji_broken_image_defense(php_text: str):
     assert ".wpis-app img.emoji" in css_text, "admin.css must suppress img.emoji"
     assert "display: none !important;" in css_text, "admin.css must hide broken emoji img tags"
 
-    # 3. ヘッダーバッジに生Unicode絵文字（🛡️, 🎯）の直接記載がないこと
-    assert "🛡️ 検知シグネチャ" not in php_text, "Header badge must use Lucide Shield SVG instead of unicode emoji"
-    assert "🎯 マイKW:" not in php_text, "Header badge must use Lucide Target SVG instead of unicode emoji"
+    # 3. ヘッダーバッジに生Unicode絵文字（シールド, ターゲット）の直接記載がないこと
+    assert "検知シグネチャ" in php_text
     print("  [PASS] Emoji broken-image defenses & Lucide badge encapsulation verified")
+
+
+def test_zero_unicode_emojis_in_plugin(php_text, js_text):
+    """プラグインの実行コード（PHPおよびJS）にUnicode絵文字が一切残っていないことを厳格検証"""
+    import unicodedata
+
+    def find_emojis(text):
+        found = []
+        for ch in text:
+            name = unicodedata.name(ch, '')
+            if 'EMOJI' in name or 'VARIATION SELECTOR' in name:
+                found.append(ch)
+            else:
+                cp = ord(ch)
+                if (0x1F300 <= cp <= 0x1F9FF) or (0x2600 <= cp <= 0x27BF) or (0x1FA00 <= cp <= 0x1FAFF) or (0xFE00 <= cp <= 0xFE0F):
+                    found.append(ch)
+        return found
+
+    php_emojis = find_emojis(php_text)
+    assert len(php_emojis) == 0, f"PHP contains unicode emojis: {set(php_emojis)}"
+
+    js_emojis = find_emojis(js_text)
+    assert len(js_emojis) == 0, f"JS contains unicode emojis: {set(js_emojis)}"
+
+    print("  [PASS] Zero Unicode emojis strictly verified across PHP and JavaScript sources")
 
 
 def main():
@@ -350,6 +374,7 @@ def main():
     test_compliance_and_privacy(php_text)
     test_lucide_icons(php_text)
     test_emoji_broken_image_defense(php_text)
+    test_zero_unicode_emojis_in_plugin(php_text, js_text)
 
     print("\nALL TESTS PASSED! Plugin is strictly verified.")
     return 0

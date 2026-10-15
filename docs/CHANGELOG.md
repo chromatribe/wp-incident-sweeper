@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [2.20261015.12] - 2026-10-15
+
+### Fixed & Cleaned
+- **全ソースコードからの絵文字完全撤廃（Zero-Emoji Architecture）:**
+  - プラグイン本体（`wp-incident-sweeper.php`、`admin.js`、`admin.css`）および言語生成定義（`scripts/build_languages.py`、PO/MO/POT）からUnicode絵文字（🚨, ⚠️, ℹ️, 🎯, 🛡️, ✅等）を完全一掃。
+  - バッジ・理由ピルタグ・アラートメッセージ・確認ダイアログのアイコン表示をインライン Lucide SVG（`svgAlert`, `svgLock`, `svgInfo`, `svgTarget`）およびプレーンテキストに統一。
+  - WordPressコアの絵文字置換（`wp-emoji-release.min.js`）による画像リンク切れアイコン（`[x]`）の発生原因を根絶。
+  - 自動テストスイートに `test_zero_unicode_emojis_in_plugin` を新設し、実行コードに絵文字が一切残っていないことを厳格に自動保証。
+
 ## [2.20261015.11] - 2026-10-15
 
 ### Fixed & Improved
