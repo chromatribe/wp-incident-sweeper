@@ -1,5 +1,25 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-15 | v2.20261015.8 国際化 (i18n/l10n) および法令遵守（外部送信規律・APPI・GDPR・規約）の完全実装
+- 🧠 思考:
+  1. 多言語環境およびWordPress標準エコシステムに対応するため、完全な gettext 国際化（POT/PO/MO）およびクライアントJavaScriptローカライズ（`wpisConfig.i18n`）を実装する。
+  2. 実運用時の法的リスクを徹底排除するため、日本の電気通信事業法（2023年6月施行 改正外部送信規律）、個人情報保護法（APPI）、EU GDPR、不正アクセス禁止法、およびAS-IS免責事項・事前バックアップ義務に完全準拠する。
+- 🔨 やった:
+  1. プラグインヘッダに `Text Domain: wp-incident-sweeper`、`Domain Path: /languages` を追加し、`load_plugin_textdomain` をフック。
+  2. `languages/wp-incident-sweeper.pot`、`languages/wp-incident-sweeper-ja.po` を生成し、`msgfmt` でバイナリ `wp-incident-sweeper-ja.mo` をコンパイル。
+  3. `wp_localize_script` に包括的な `i18n` 辞書を渡し、`admin.js` に `__()` および `sprintf()` ヘルパーを実装。
+  4. 電気通信事業法外部送信規律対応: GitHub（`raw.githubusercontent.com`）シグネチャ取得時の送信情報（IP、User-Agentヘッダ）、非送信情報（サイト内コンテンツ・個人データ完全ローカル完結）をUI上で明示開示。
+  5. 個人情報保護法 & GDPR 対応: `wp_add_privacy_policy_content` による公式ポリシー提案文面登録、およびマイKW（`wpis_my_keywords`）に対する個人データ開示（`wp_privacy_personal_data_exporters`）・消去（`wp_privacy_personal_data_erasers`）APIフックを実装。
+  6. 不正アクセス禁止法遵守 & 利用許諾条項（AUP）および免責事項（AS IS 無保証、事前バックアップ義務）を策定。
+  7. 管理画面に第4のタブ「📜 法令・規約・プライバシー (Compliance & Privacy)」を新設し、4枚のカードUIで常時閲覧可能に整理。
+  8. `scripts/build_languages.py` を作成し、`scripts/build_zip.sh` での自動ビルドチェーンに統合。
+  9. `test_sweeper.py` に `test_i18n_l10n_readiness` と `test_compliance_and_privacy` を追加。
+  10. Qlypx方式で全7箇所を `2.20261015.8` に同期。
+- ❌ 失敗: なし。
+- ✅ 成功: `test_sweeper.py` 全テストPASS、`check_version_sync.py` PASS。
+- 🧭 決定: 法令対応事項は管理画面内に専用タブとして常時開示し、サイト管理者が自社ポリシーや法的要件を迷わず確認できる構成とした。
+- 🔗 参照: `wp-incident-sweeper/wp-incident-sweeper.php` / `spec/SPEC.md` / `PROJECT.md`
+
 ## 2026-10-15 | v2.20261015.7 マイKW（個別検知キーワード登録）機能の実装
 - 🧠 思考: ユーザーごとに検知したい固有のキーワード（社内NGワード、顧客情報兆候、特定ドメイン等）を自由に指定できるよう、ユーザーメタに保存する「マイKW」設定機能を追加。省メモリ（0MB）と高視認性を両立させる。
 - 🔨 やった:

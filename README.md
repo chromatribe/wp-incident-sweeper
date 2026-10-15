@@ -3,7 +3,7 @@
 > **Emergency incident response, mass defacement auditing, and safe one-click cleanup plugin for WordPress (Single & Multisite).**  
 > WordPress サイト内の全投稿・固定ページ・ユーザーを一括スキャンし、改ざん痕跡・不正侵入を安全に特定・駆除する緊急セキュリティ監査ツール。
 
-**Version:** `2.20261015.7`  
+**Version:** `2.20261015.8`  
 📥 **[Download Latest Plugin (`wp-incident-sweeper.zip`)](https://github.com/chromatribe/wp-incident-sweeper/raw/main/wp-incident-sweeper.zip)**
 
 ---
@@ -48,6 +48,17 @@
 8. **Zero-Footprint Clean Removal / ゼロ・フットプリント**
    - No external CDN dependencies, no custom database tables or leftover options. Clean removal on deactivation.
    - *（データベースにゴミを残さず、巡回完了後は停止・削除するだけで完全撤去可能）*
+
+9. **Internationalization & Localization (i18n / l10n) / 国際化・地域化**
+   - Built to WordPress gettext standards with complete `.pot`, `.po`, and binary `.mo` catalogs.
+   - Fully localized client UI (dialogs, toolbars, badges).
+   - *（WordPress公式標準の gettext 多言語・地域化対応。UIメッセージを完全ローカライズ）*
+
+10. **Legal & Compliance Readiness / 各種法令・コンプライアンス準拠**
+    - **Telecommunications Business Act (External Transmission):** Transparent disclosure of GitHub connection destination, transmitted headers, and 100% local database scanning.
+    - **APPI & GDPR:** Automated privacy policy text injection (`wp_add_privacy_policy_content`) and personal data exporter/eraser API hooks for custom My Keywords.
+    - **Acceptable Use & AS-IS Disclaimer:** Strict authorized-use terms and prerequisite backup obligations.
+    - *（電気通信事業法外部送信規律、個人情報保護法、GDPR、不正アクセス禁止法、免責事項・事前バックアップ義務に完全準拠）*
 
 ---
 

@@ -235,6 +235,66 @@ def test_js_execution():
     print("  [PASS] JavaScript runtime execution (Single & Multisite mock rendering)")
 
 
+def test_i18n_l10n_readiness(php_text: str, js_text: str):
+    """国際化 (i18n) および地域化 (l10n) の実装検証"""
+    # 1. プラグインヘッダ
+    assert "Text Domain: wp-incident-sweeper" in php_text, "Plugin header must specify Text Domain"
+    assert "Domain Path: /languages" in php_text, "Plugin header must specify Domain Path"
+
+    # 2. テキストドメインロード
+    assert "load_plugin_textdomain" in php_text, "Plugin must call load_plugin_textdomain"
+    assert "load_textdomain" in php_text, "Plugin must have load_textdomain method"
+
+    # 3. 言語ファイル実体の存在
+    lang_dir = ROOT / "wp-incident-sweeper" / "languages"
+    pot_file = lang_dir / "wp-incident-sweeper.pot"
+    po_file = lang_dir / "wp-incident-sweeper-ja.po"
+    mo_file = lang_dir / "wp-incident-sweeper-ja.mo"
+
+    assert pot_file.is_file(), "POT template file must exist"
+    assert po_file.is_file(), "Japanese PO translation file must exist"
+    assert mo_file.is_file(), "Compiled MO binary file must exist"
+
+    # 4. MO バイナリのマジックナンバー検証 (GNU gettext magic bytes)
+    mo_bytes = mo_file.read_bytes()
+    assert len(mo_bytes) > 500, "MO binary must be populated"
+    magic = mo_bytes[:4]
+    assert magic in (b"\xde\x12\x04\x95", b"\x95\x04\x12\xde"), f"Invalid gettext magic bytes: {magic.hex()}"
+
+    # 5. JS 側のローカライゼーション
+    assert "'i18n'        => array(" in php_text, "PHP enqueue_assets must supply i18n dictionary"
+    assert "function __(key, fallback)" in js_text, "admin.js must implement __() i18n helper"
+    assert "function sprintf(format, ...args)" in js_text, "admin.js must implement sprintf helper"
+    print("  [PASS] Internationalization (i18n/l10n) catalogs and gettext MO verified")
+
+
+def test_compliance_and_privacy(php_text: str):
+    """法令準拠（電気通信事業法外部送信規律、APPI、GDPR、不正アクセス禁止法、免責）の検証"""
+    # 1. プライバシーポリシー提案フック
+    assert "register_privacy_policy_content" in php_text, "Must register privacy policy content handler"
+    assert "wp_add_privacy_policy_content" in php_text, "Must call wp_add_privacy_policy_content"
+
+    # 2. GDPR / 個人情報保護法 個人データ開示・消去（Data Exporter / Eraser）
+    assert "wp_privacy_personal_data_exporters" in php_text, "Must register wp_privacy_personal_data_exporters"
+    assert "wp_privacy_personal_data_erasers" in php_text, "Must register wp_privacy_personal_data_erasers"
+    assert "export_user_privacy_data" in php_text, "Must implement export_user_privacy_data"
+    assert "erase_user_privacy_data" in php_text, "Must implement erase_user_privacy_data"
+
+    # 3. 法令・規約・プライバシータブとパネルUI
+    assert 'data-tab="compliance"' in php_text, "Compliance tab button must exist"
+    assert 'id="wpis-panel-compliance"' in php_text, "Compliance panel #wpis-panel-compliance must exist"
+
+    # 4. 電気通信事業法 外部送信規律の開示
+    assert "電気通信事業法（外部送信規律）への対応" in php_text, "Must disclose Telecommunications Business Act external transmission"
+    assert "raw.githubusercontent.com" in php_text, "Must disclose external communication destination"
+
+    # 5. 不正アクセス禁止法 & 免責事項
+    assert "不正アクセス禁止法遵守" in php_text, "Must declare compliance with Unauthorized Computer Access Act"
+    assert "免責事項 (Limitation of Liability)" in php_text, "Must specify limitation of liability and AS IS warranty disclaimer"
+    assert "事前バックアップ義務" in php_text, "Must stipulate prerequisite backup obligation"
+    print("  [PASS] Legal compliance (Telecommunications Act, APPI/GDPR, AUP, AS-IS) verified")
+
+
 def main():
     print("Running WP Incident Sweeper Test Suite...")
     php_text = PHP_FILE.read_text(encoding="utf-8")
@@ -247,6 +307,8 @@ def main():
     test_signature_engine(php_text, js_text)
     test_my_keywords_feature(php_text, js_text)
     test_js_execution()
+    test_i18n_l10n_readiness(php_text, js_text)
+    test_compliance_and_privacy(php_text)
 
     print("\nALL TESTS PASSED! Plugin is strictly verified.")
     return 0

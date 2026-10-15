@@ -6,6 +6,9 @@ cd "$DIR"
 
 echo "=== Building WP Incident Sweeper Plugin ZIP ==="
 
+# Compile language files
+python3 scripts/build_languages.py
+
 rm -f wp-incident-sweeper.zip
 
 # Create zip with wp-incident-sweeper as root directory

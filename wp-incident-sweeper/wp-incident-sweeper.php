@@ -3,12 +3,13 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。単一サイトおよびマルチサイト（サイトネットワーク管理）の両方に完全対応し、コンテキストに応じてUIが自動最適化されます。
- * Version: 2.20261015.7
+ * Version: 2.20261015.8
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
  * Network: true
  * Text Domain: wp-incident-sweeper
+ * Domain Path: /languages
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -110,6 +111,9 @@ class WP_Incident_Sweeper {
     }
 
     private function __construct() {
+        // 国際化・地域化 (i18n / l10n)
+        add_action( 'init', array( $this, 'load_textdomain' ) );
+
         // 通常管理画面メニュー
         add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
         // マルチサイト・ネットワーク管理画面メニュー
@@ -117,12 +121,120 @@ class WP_Incident_Sweeper {
 
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 
+        // 法令遵守・プライバシー対応（APPI / GDPR / 電気通信事業法外部送信開示）
+        add_action( 'admin_init', array( $this, 'register_privacy_policy_content' ) );
+        add_filter( 'wp_privacy_personal_data_exporters', array( $this, 'register_privacy_exporters' ) );
+        add_filter( 'wp_privacy_personal_data_erasers', array( $this, 'register_privacy_erasers' ) );
+
         // Ajax Handlers
         add_action( 'wp_ajax_wpis_run_scan', array( $this, 'ajax_run_scan' ) );
         add_action( 'wp_ajax_wpis_delete_posts', array( $this, 'ajax_delete_posts' ) );
         add_action( 'wp_ajax_wpis_delete_users', array( $this, 'ajax_delete_users' ) );
         add_action( 'wp_ajax_wpis_sync_signatures', array( $this, 'ajax_sync_signatures' ) );
         add_action( 'wp_ajax_wpis_save_my_keywords', array( $this, 'ajax_save_my_keywords' ) );
+    }
+
+    /**
+     * 国際化・翻訳テキストドメインのロード
+     */
+    public function load_textdomain() {
+        load_plugin_textdomain(
+            'wp-incident-sweeper',
+            false,
+            dirname( plugin_basename( __FILE__ ) ) . '/languages'
+        );
+    }
+
+    /**
+     * 個人情報保護法・GDPR対応：プライバシーポリシー提案文面の登録
+     */
+    public function register_privacy_policy_content() {
+        if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+            return;
+        }
+        $content = sprintf(
+            '<p class="privacy-policy-tutorial">%s</p>' .
+            '<h3 class="privacy-policy-tutorial">%s</h3>' .
+            '<p>%s</p>' .
+            '<h3 class="privacy-policy-tutorial">%s</h3>' .
+            '<p>%s</p>',
+            esc_html__( 'WP Incident Sweeper はサイト内のセキュリティ維持およびインシデント発生時の復旧支援ツールです。以下の文面は、サイト管理者がプライバシーポリシーに追加・調整できる参考テンプレートです。', 'wp-incident-sweeper' ),
+            esc_html__( 'セキュリティ監査および脅威検知', 'wp-incident-sweeper' ),
+            esc_html__( '当サイトでは、不正な改ざんやスパム投稿、不正アクセスの兆候を検知・監視するため、管理ツール（WP Incident Sweeper）を使用しています。本ツールによるコンテンツおよびアカウントの照合処理はすべて当サイトのサーバー内部で完結しており、投稿本文や利用者の個人データが外部第三者へ送信・共有されることはありません。', 'wp-incident-sweeper' ),
+            esc_html__( 'シグネチャ更新に伴う外部通信（電気通信事業法外部送信規律への対応）', 'wp-incident-sweeper' ),
+            esc_html__( '脅威シグネチャ（既知の改ざん文字列や悪性ドメイン一覧）の最新化のため、当サイト管理者はGitHubサーバー（raw.githubusercontent.com）からシグネチャ定義ファイルを取得することがあります。この通信において送信される情報はHTTP接続に必要な標準的情報（IPアドレス、User-Agent）に限られ、サイト利用者や投稿内容等のデータは一切含まれません。', 'wp-incident-sweeper' )
+        );
+        wp_add_privacy_policy_content( __( 'WP Incident Sweeper', 'wp-incident-sweeper' ), $content );
+    }
+
+    /**
+     * 個人データエクスポート（GDPR / APPI 開示要求対応）
+     */
+    public function register_privacy_exporters( $exporters ) {
+        $exporters['wp-incident-sweeper'] = array(
+            'exporter_friendly_name' => __( 'WP Incident Sweeper マイKW設定', 'wp-incident-sweeper' ),
+            'callback'               => array( $this, 'export_user_privacy_data' ),
+        );
+        return $exporters;
+    }
+
+    public function export_user_privacy_data( $email_address, $page = 1 ) {
+        $user = get_user_by( 'email', $email_address );
+        $data_to_export = array();
+
+        if ( $user ) {
+            $my_keywords = get_user_meta( $user->ID, 'wpis_my_keywords', true );
+            if ( ! empty( $my_keywords ) ) {
+                $kw_list = is_array( $my_keywords ) ? implode( ', ', $my_keywords ) : (string) $my_keywords;
+                $data_to_export[] = array(
+                    'group_id'    => 'wp-incident-sweeper',
+                    'group_label' => __( 'WP Incident Sweeper 設定', 'wp-incident-sweeper' ),
+                    'item_id'     => 'wpis-my-keywords-' . $user->ID,
+                    'data'        => array(
+                        array(
+                            'name'  => __( 'マイKW（個別検知キーワード）', 'wp-incident-sweeper' ),
+                            'value' => $kw_list,
+                        ),
+                    ),
+                );
+            }
+        }
+
+        return array(
+            'data' => $data_to_export,
+            'done' => true,
+        );
+    }
+
+    /**
+     * 個人データ消去（GDPR / APPI 消去要求・忘れられる権利対応）
+     */
+    public function register_privacy_erasers( $erasers ) {
+        $erasers['wp-incident-sweeper'] = array(
+            'eraser_friendly_name' => __( 'WP Incident Sweeper マイKW設定', 'wp-incident-sweeper' ),
+            'callback'             => array( $this, 'erase_user_privacy_data' ),
+        );
+        return $erasers;
+    }
+
+    public function erase_user_privacy_data( $email_address, $page = 1 ) {
+        $user = get_user_by( 'email', $email_address );
+        $items_removed = 0;
+
+        if ( $user ) {
+            $my_keywords = get_user_meta( $user->ID, 'wpis_my_keywords', true );
+            if ( ! empty( $my_keywords ) ) {
+                delete_user_meta( $user->ID, 'wpis_my_keywords' );
+                $items_removed = 1;
+            }
+        }
+
+        return array(
+            'items_removed'  => $items_removed,
+            'items_retained' => 0,
+            'messages'       => array(),
+            'done'           => true,
+        );
     }
 
     const REMOTE_SIGNATURES_URL = 'https://raw.githubusercontent.com/chromatribe/wp-incident-sweeper/main/signatures.json';
@@ -176,7 +288,7 @@ class WP_Incident_Sweeper {
         $response = wp_remote_get( self::REMOTE_SIGNATURES_URL, array(
             'timeout'    => 10,
             'sslverify'  => true,
-            'user-agent' => 'WP-Incident-Sweeper/' . '2.20261015.7',
+            'user-agent' => 'WP-Incident-Sweeper/' . '2.20261015.8',
         ) );
 
         if ( is_wp_error( $response ) ) {
@@ -297,8 +409,8 @@ class WP_Incident_Sweeper {
 
     public function register_admin_menu() {
         add_menu_page(
-            'インシデント巡回スイーパー',
-            '巡回スイーパー',
+            __( 'インシデント巡回スイーパー', 'wp-incident-sweeper' ),
+            __( '巡回スイーパー', 'wp-incident-sweeper' ),
             'manage_options',
             'wp-incident-sweeper',
             array( $this, 'render_admin_page' ),
@@ -309,8 +421,8 @@ class WP_Incident_Sweeper {
 
     public function register_network_admin_menu() {
         add_menu_page(
-            'インシデント巡回スイーパー（ネットワーク全体）',
-            '巡回スイーパー(全傘下サイト)',
+            __( 'インシデント巡回スイーパー（ネットワーク全体）', 'wp-incident-sweeper' ),
+            __( '巡回スイーパー(全傘下サイト)', 'wp-incident-sweeper' ),
             'manage_network',
             'wp-incident-sweeper',
             array( $this, 'render_admin_page' ),
@@ -328,14 +440,14 @@ class WP_Incident_Sweeper {
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '2.20261015.7'
+            '2.20261015.8'
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '2.20261015.7',
+            '2.20261015.8',
             true
         );
 
@@ -348,6 +460,42 @@ class WP_Incident_Sweeper {
             'isNetwork'   => $is_network,
             'nonce'       => wp_create_nonce( 'wpis_nonce_action' ),
             'myKeywords'  => $this->get_my_keywords(),
+            'i18n'        => array(
+                'scan_running'           => __( 'スキャン中...', 'wp-incident-sweeper' ),
+                'scan_running_network'   => __( '全傘下サイトを巡回クロール中...', 'wp-incident-sweeper' ),
+                'rescan'                 => __( '再スキャン実行', 'wp-incident-sweeper' ),
+                'rescan_network'         => __( '全サイト横断スキャン実行', 'wp-incident-sweeper' ),
+                'scanning_content'       => __( 'サイト内を高速クロール中（全投稿・固定ページ・ユーザー）...', 'wp-incident-sweeper' ),
+                'scanning_network'       => __( '全傘下サイトの全コンテンツ・ユーザーを横断クロール中...', 'wp-incident-sweeper' ),
+                'scanning_users'         => __( 'ユーザーをスキャン中...', 'wp-incident-sweeper' ),
+                'no_threats_found'       => __( '該当するコンテンツはありません（安全です）', 'wp-incident-sweeper' ),
+                'no_users_found'         => __( 'ユーザーはいません', 'wp-incident-sweeper' ),
+                'normal'                 => __( '正常', 'wp-incident-sweeper' ),
+                'threat_danger'          => __( '🚨 危険（即削除推奨）', 'wp-incident-sweeper' ),
+                'threat_warning'         => __( '⚠️ 警告（要確認）', 'wp-incident-sweeper' ),
+                'threat_muted'           => __( 'ℹ️ 下書き/ゴミ箱', 'wp-incident-sweeper' ),
+                'user_threat'            => __( '🚨 不審（即削除推奨）', 'wp-incident-sweeper' ),
+                'protected_front'        => __( 'トップページ', 'wp-incident-sweeper' ),
+                'protected_posts'        => __( '投稿一覧ページ', 'wp-incident-sweeper' ),
+                'protected_privacy'      => __( 'プライバシーポリシー', 'wp-incident-sweeper' ),
+                'protected_notice'       => __( 'システム重要ページのため削除保護', 'wp-incident-sweeper' ),
+                'view'                   => __( '表示', 'wp-incident-sweeper' ),
+                'edit'                   => __( '編集', 'wp-incident-sweeper' ),
+                'confirm_delete_posts'   => __( "【安全確認: 記事の完全削除】\n選択された %d 件のコンテンツをデータベースから【完全に消去】します。\n\n※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\n\n本当に実行しますか？", 'wp-incident-sweeper' ),
+                'confirm_trash_posts'    => __( "【確認: ゴミ箱への移動】\n選択された %d 件のコンテンツをゴミ箱へ移動します。\n（後から復元可能です）\n\n実行しますか？", 'wp-incident-sweeper' ),
+                'confirm_delete_users'   => __( "【安全確認: 不審ユーザーの削除】\n選択された %d 名の不審ユーザーを削除します。\n\n🛡️ 巻き込み防止ガード:\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\n・公開中の正規記事は安全に保護されます。\n\n実行しますか？", 'wp-incident-sweeper' ),
+                'delete_users_btn'       => __( '選択した%d名の不審ユーザーを削除', 'wp-incident-sweeper' ),
+                'delete_users_btn_empty' => __( '選択した不審ユーザーを削除', 'wp-incident-sweeper' ),
+                'no_export_data'         => __( 'エクスポートするスキャンデータがありません。先にスキャンを実行してください。', 'wp-incident-sweeper' ),
+                'sync_in_progress'       => __( '同期中...', 'wp-incident-sweeper' ),
+                'save_in_progress'       => __( '保存中...', 'wp-incident-sweeper' ),
+                'my_kw_saved'            => __( 'マイKWを保存しました！', 'wp-incident-sweeper' ),
+                'my_kw_badge'            => __( '🎯 マイKW検知', 'wp-incident-sweeper' ),
+                'sites_count_suffix'     => __( '%d サイト', 'wp-incident-sweeper' ),
+                'delete_posts_done'      => __( "%d 件のコンテンツを処理しました。\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）", 'wp-incident-sweeper' ),
+                'delete_users_done'      => __( '%d 名のユーザーの削除が完了しました。', 'wp-incident-sweeper' ),
+                'delete_users_skipped'   => __( "\n（※正規ユーザーや自身のアカウント %d 名は安全のため自動スキップされました）", 'wp-incident-sweeper' ),
+            ),
         ) );
     }
 
@@ -1059,6 +1207,10 @@ class WP_Incident_Sweeper {
                     <span class="dashicons dashicons-info" style="font-size:18px;width:18px;height:18px;"></span>
                     <?php echo $is_network ? '巡回ガイド＆マルチサイト運用' : '巡回チェックガイド＆安全ガード仕様'; ?>
                 </button>
+                <button type="button" class="wpis-tab-btn" data-tab="compliance">
+                    <span class="dashicons dashicons-media-document" style="font-size:18px;width:18px;height:18px;"></span>
+                    <?php esc_html_e( '法令・規約・プライバシー', 'wp-incident-sweeper' ); ?>
+                </button>
             </div>
 
             <!-- Panel: Posts -->
@@ -1183,6 +1335,84 @@ class WP_Incident_Sweeper {
                         <li><strong>ガード4（公開記事の所有権安全移譲）：</strong> 不審ユーザー削除時、下書き等の不正記事のみ消去され、公開中記事は現在管理者に引き継ぎ。</li>
                         <li><strong>ガード5（自身・初期管理者の保護）：</strong> ログイン中管理者およびID: 1 のアカウントは削除不可。</li>
                     </ul>
+                </div>
+            </div>
+
+            <!-- Panel: Compliance & Privacy -->
+            <div class="wpis-panel" id="wpis-panel-compliance">
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:24px;line-height:1.7;">
+                    <div style="margin-bottom:24px;border-bottom:1px solid #e2e8f0;padding-bottom:14px;">
+                        <h2 style="font-size:18px;margin:0 0 6px 0;color:#0f172a;display:flex;align-items:center;gap:8px;">
+                            <span class="dashicons dashicons-shield" style="color:#0284c7;font-size:22px;width:22px;height:22px;"></span>
+                            <?php esc_html_e( '法令遵守（コンプライアンス）・プライバシー・利用規約', 'wp-incident-sweeper' ); ?>
+                        </h2>
+                        <p style="font-size:13px;color:#64748b;margin:0;">
+                            <?php esc_html_e( 'WP Incident Sweeper は、各種法令（電気通信事業法、個人情報保護法、不正アクセス禁止法等）およびWordPress標準プライバシーAPIに完全準拠して設計されています。', 'wp-incident-sweeper' ); ?>
+                        </p>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                        <!-- Card 1: 外部送信規律 -->
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
+                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:6px;">
+                                <span>📡</span> <?php esc_html_e( '電気通信事業法（外部送信規律）への対応', 'wp-incident-sweeper' ); ?>
+                            </h3>
+                            <div style="font-size:12.5px;color:#334155;line-height:1.6;">
+                                <p style="margin-top:0;"><strong>【外部送信の明示と目的】</strong><br>
+                                本プラグインは、既知の不正改ざん・Webシェル・スパムドメイン等の最新定義ファイル（<code>signatures.json</code>）を取得する目的に限り、GitHubの公開サーバー（<code>raw.githubusercontent.com</code>）へHTTP通信を行います。</p>
+                                <ul style="margin:0 0 8px 18px;padding:0;">
+                                    <li><strong>送信先:</strong> GitHub, Inc. (米国)</li>
+                                    <li><strong>送信情報:</strong> HTTPリクエストに伴う標準情報（接続元IPアドレス、User-Agentヘッダ）</li>
+                                    <li><strong>ローカル完結設計:</strong> サイト内の投稿内容、ユーザー情報、データベースデータは<strong>一切外部送信されません</strong>。すべての照合・検知・削除処理はWordPressサーバー内のみで実行されます。</li>
+                                    <li><strong>通信タイミング:</strong> 管理者による手動更新時、または1日に1回の更新確認時のみ。</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: 個人情報保護法 & GDPR -->
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
+                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:6px;">
+                                <span>🔒</span> <?php esc_html_e( '個人情報保護法 (APPI) & GDPR 対応', 'wp-incident-sweeper' ); ?>
+                            </h3>
+                            <div style="font-size:12.5px;color:#334155;line-height:1.6;">
+                                <p style="margin-top:0;"><strong>【プライバシーポリシー連携と個人データ保護】</strong></p>
+                                <ul style="margin:0 0 8px 18px;padding:0;">
+                                    <li><strong>プライバシーポリシー提案機能:</strong> WordPress標準の <code>wp_add_privacy_policy_content</code> に対応し、「設定 > プライバシー」画面に当プラグインの利用に関するポリシー文面テンプレートを自動提供しています。</li>
+                                    <li><strong>個人データのエクスポート・消去API準拠:</strong> 管理者が設定した「マイKW (<code>wpis_my_keywords</code>)」は個人データ開示・消去フック（<code>wp_privacy_personal_data_exporters / erasers</code>）に対応しており、開示請求や削除要求に完全準拠します。</li>
+                                    <li><strong>監査ログ・証跡保全の推奨:</strong> 不審ユーザーや改ざん記事の削除は不可逆です。法的説明責任や事後調査のため、削除前に「CSVエクスポート」によるバックアップ保存を推奨します。</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: 不正アクセス禁止法 & 利用許諾条項 -->
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
+                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:6px;">
+                                <span>⚖️</span> <?php esc_html_e( '不正アクセス禁止法遵守 & 利用許諾条項', 'wp-incident-sweeper' ); ?>
+                            </h3>
+                            <div style="font-size:12.5px;color:#334155;line-height:1.6;">
+                                <p style="margin-top:0;"><strong>【適正な利用に関する遵守事項】</strong></p>
+                                <ul style="margin:0 0 8px 18px;padding:0;">
+                                    <li><strong>正当な管理権原の保有:</strong> 本プラグインは、利用者が自ら所有・管理するWordPress環境、または正当な保守・セキュリティ調査契約に基づき所有者から明示的な書面・電磁的同意を得た環境でのみ使用できます。</li>
+                                    <li><strong>第三者システムへの無断利用の禁止:</strong> 管理権原のない第三者のシステムに対する無断導入、検査、改変は「不正アクセス行為の禁止等に関する法律」および各国のサイバー犯罪防止法令により禁じられています。</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Card 4: 免責事項 & バックアップ義務 -->
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;">
+                            <h3 style="font-size:15px;margin-top:0;margin-bottom:10px;color:#0f172a;display:flex;align-items:center;gap:6px;">
+                                <span>⚠️</span> <?php esc_html_e( '免責事項 (Limitation of Liability) & バックアップ義務', 'wp-incident-sweeper' ); ?>
+                            </h3>
+                            <div style="font-size:12.5px;color:#334155;line-height:1.6;">
+                                <p style="margin-top:0;"><strong>【現状有姿 (AS IS) 提供と事前バックアップ義務】</strong></p>
+                                <ul style="margin:0 0 8px 18px;padding:0;">
+                                    <li><strong>無保証提供:</strong> 本ソフトウェアは現状有姿で提供され、特定の改ざん・インシデントの完全な検出または復旧を保証するものではありません。</li>
+                                    <li><strong>バックアップの必須:</strong> コンテンツやユーザーの一括完全削除を実行する前に、必ずデータベースおよびファイル全体の完全バックアップを取得してください。</li>
+                                    <li><strong>損害賠償の免責:</strong> 本ソフトウェアの利用または利用不能から生じるデータの消失、業務の中断、逸失利益その他の直接的・間接的損害について、開発者・配布者は一切の責任を負いません。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

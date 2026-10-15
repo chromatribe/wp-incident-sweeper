@@ -1,0 +1,177 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP Incident Sweeper 2.20261015.8\n"
+"Report-Msgid-Bugs-To: https://chromatri.be\n"
+"POT-Creation-Date: 2026-10-15 18:40+0900\n"
+"PO-Revision-Date: 2026-10-15 18:40+0900\n"
+"Last-Translator: CHROMATRIBE <info@chromatri.be>\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Python build_languages.py\n"
+
+msgid "WP Incident Sweeper はサイト内のセキュリティ維持およびインシデント発生時の復旧支援ツールです。以下の文面は、サイト管理者がプライバシーポリシーに追加・調整できる参考テンプレートです。"
+msgstr ""
+
+msgid "セキュリティ監査および脅威検知"
+msgstr ""
+
+msgid "当サイトでは、不正な改ざんやスパム投稿、不正アクセスの兆候を検知・監視するため、管理ツール（WP Incident Sweeper）を使用しています。本ツールによるコンテンツおよびアカウントの照合処理はすべて当サイトのサーバー内部で完結しており、投稿本文や利用者の個人データが外部第三者へ送信・共有されることはありません。"
+msgstr ""
+
+msgid "シグネチャ更新に伴う外部通信（電気通信事業法外部送信規律への対応）"
+msgstr ""
+
+msgid "脅威シグネチャ（既知の改ざん文字列や悪性ドメイン一覧）の最新化のため、当サイト管理者はGitHubサーバー（raw.githubusercontent.com）からシグネチャ定義ファイルを取得することがあります。この通信において送信される情報はHTTP接続に必要な標準的情報（IPアドレス、User-Agent）に限られ、サイト利用者や投稿内容等のデータは一切含まれません。"
+msgstr ""
+
+msgid "WP Incident Sweeper"
+msgstr ""
+
+msgid "WP Incident Sweeper マイKW設定"
+msgstr ""
+
+msgid "WP Incident Sweeper 設定"
+msgstr ""
+
+msgid "マイKW（個別検知キーワード）"
+msgstr ""
+
+msgid "インシデント巡回スイーパー"
+msgstr ""
+
+msgid "巡回スイーパー"
+msgstr ""
+
+msgid "インシデント巡回スイーパー（ネットワーク全体）"
+msgstr ""
+
+msgid "巡回スイーパー(全傘下サイト)"
+msgstr ""
+
+msgid "スキャン中..."
+msgstr ""
+
+msgid "全傘下サイトを巡回クロール中..."
+msgstr ""
+
+msgid "再スキャン実行"
+msgstr ""
+
+msgid "全サイト横断スキャン実行"
+msgstr ""
+
+msgid "サイト内を高速クロール中（全投稿・固定ページ・ユーザー）..."
+msgstr ""
+
+msgid "全傘下サイトの全コンテンツ・ユーザーを横断クロール中..."
+msgstr ""
+
+msgid "ユーザーをスキャン中..."
+msgstr ""
+
+msgid "該当するコンテンツはありません（安全です）"
+msgstr ""
+
+msgid "ユーザーはいません"
+msgstr ""
+
+msgid "正常"
+msgstr ""
+
+msgid "🚨 危険（即削除推奨）"
+msgstr ""
+
+msgid "⚠️ 警告（要確認）"
+msgstr ""
+
+msgid "ℹ️ 下書き/ゴミ箱"
+msgstr ""
+
+msgid "🚨 不審（即削除推奨）"
+msgstr ""
+
+msgid "トップページ"
+msgstr ""
+
+msgid "投稿一覧ページ"
+msgstr ""
+
+msgid "プライバシーポリシー"
+msgstr ""
+
+msgid "システム重要ページのため削除保護"
+msgstr ""
+
+msgid "表示"
+msgstr ""
+
+msgid "編集"
+msgstr ""
+
+msgid "【安全確認: 記事の完全削除】\\n選択された %d 件のコンテンツをデータベースから【完全に消去】します。\\n\\n※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\\n\\n本当に実行しますか？"
+msgstr ""
+
+msgid "【確認: ゴミ箱への移動】\\n選択された %d 件のコンテンツをゴミ箱へ移動します。\\n（後から復元可能です）\\n\\n実行しますか？"
+msgstr ""
+
+msgid "【安全確認: 不審ユーザーの削除】\\n選択された %d 名の不審ユーザーを削除します。\\n\\n🛡️ 巻き込み防止ガード:\\n・不正な下書き・ゴミ箱記事のみが完全消去されます。\\n・公開中の正規記事は安全に保護されます。\\n\\n実行しますか？"
+msgstr ""
+
+msgid "選択した%d名の不審ユーザーを削除"
+msgstr ""
+
+msgid "選択した不審ユーザーを削除"
+msgstr ""
+
+msgid "エクスポートするスキャンデータがありません。先にスキャンを実行してください。"
+msgstr ""
+
+msgid "同期中..."
+msgstr ""
+
+msgid "保存中..."
+msgstr ""
+
+msgid "マイKWを保存しました！"
+msgstr ""
+
+msgid "🎯 マイKW検知"
+msgstr ""
+
+msgid "%d サイト"
+msgstr ""
+
+msgid "%d 件のコンテンツを処理しました。\\n（完全削除: %d件 / ゴミ箱移動: %d件 / スキップ: %d件）"
+msgstr ""
+
+msgid "%d 名のユーザーの削除が完了しました。"
+msgstr ""
+
+msgid "\\n（※正規ユーザーや自身のアカウント %d 名は安全のため自動スキップされました）"
+msgstr ""
+
+msgid "法令・規約・プライバシー"
+msgstr ""
+
+msgid "法令遵守（コンプライアンス）・プライバシー・利用規約"
+msgstr ""
+
+msgid "WP Incident Sweeper は、各種法令（電気通信事業法、個人情報保護法、不正アクセス禁止法等）およびWordPress標準プライバシーAPIに完全準拠して設計されています。"
+msgstr ""
+
+msgid "電気通信事業法（外部送信規律）への対応"
+msgstr ""
+
+msgid "個人情報保護法 (APPI) & GDPR 対応"
+msgstr ""
+
+msgid "不正アクセス禁止法遵守 & 利用許諾条項"
+msgstr ""
+
+msgid "免責事項 (Limitation of Liability) & バックアップ義務"
+msgstr ""
+

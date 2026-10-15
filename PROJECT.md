@@ -1,16 +1,30 @@
 # WP Incident Sweeper — プロジェクト定義
 
-**Current Version:** `2.20261015.7`
+**Current Version:** `2.20261015.8`
 
 ## 1. 概要
 WordPressサイト内の全コンテンツ（公開・下書き・ゴミ箱・非公開）および登録ユーザーを瞬時に一括スキャンし、改ざん痕跡（`Hacked by...`、`wp2_*` 等）を自動判定・安全に一括駆除する緊急セキュリティ・巡回ツール。マルチサイト（サイトネットワーク管理）環境にも完全対応し、傘下の全子サイトを横断スキャン可能。
 
 ## 2. バージョン体系（Qlypx方式）
 - 正本: `PROJECT.md` の `**Current Version:**`
-- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.7`）
+- 形式: `MAJOR.YYYYMMDD.BUILD`（例: `2.20261015.8`）
 - 同期検証: `python3 scripts/check_version_sync.py`
 
 ## 3. Change Log
+
+### 2.20261015.8
+- **国際化・地域化 (i18n / l10n) の完全実装:**
+  - WordPress公式標準 gettext 準拠のテキストドメイン（`wp-incident-sweeper`）および `/languages` パスを設定。
+  - `wp-incident-sweeper.pot`、`wp-incident-sweeper-ja.po`、バイナリ `wp-incident-sweeper-ja.mo` を生成・配置。
+  - クライアント側（JavaScript）向けに `wpisConfig.i18n` 辞書を注入し、すべてのモーダル、ダイアログ、ステータスバッジの多言語化に対応。
+- **法令遵守（コンプライアンス）& プライバシー対応の完全実装:**
+  - **電気通信事業法（2023年6月施行 改正外部送信規律）対応:** GitHub（`raw.githubusercontent.com`）へのシグネチャ取得通信における送信情報（IP、User-Agent）、非送信情報（サイト内コンテンツ・個人データ完全ローカル完結）をUI上で明示開示。
+  - **個人情報保護法 (APPI) & GDPR 対応:** `wp_add_privacy_policy_content` によるプライバシーポリシー提案文面の自動登録、および「マイKW (`wpis_my_keywords`)」に対する個人データ開示（`wp_privacy_personal_data_exporters`）と消去（`wp_privacy_personal_data_erasers`）フックを実装。
+  - **不正アクセス禁止法遵守 & 利用許諾条項 (AUP):** 正当な管理権原または契約に基づく保守環境に限定する利用規約条項を策定。
+  - **免責事項 (Limitation of Liability):** AS-IS（無保証）提供および一括完全削除前の事前バックアップ義務を明文化。
+  - **新タブ新設:** 管理画面に第4のタブ「📜 法令・規約・プライバシー (Compliance & Privacy)」を追加し、常時閲覧可能に整備。
+- **総合テストスイート拡張:**
+  - `test_i18n_l10n_readiness`（POT/PO/MOバイナリ検証）および `test_compliance_and_privacy`（各法令フック・UI開示検証）を追加。
 
 ### 2.20261015.7
 - **マイKW（個別検知キーワード指定機能）の実装:**

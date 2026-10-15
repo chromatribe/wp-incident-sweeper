@@ -13,6 +13,16 @@ document.addEventListener('DOMContentLoaded', function () {
   // ネットワーク管理画面（全傘下サイト横断モード）かどうかの厳密判定
   const isNetwork = (root.dataset.isNetwork === '1') || (!!wpisConfig.isNetwork);
 
+  // i18n ローカライゼーションヘルパー
+  const i18n = (window.wpisConfig && window.wpisConfig.i18n) || {};
+  function __(key, fallback) {
+    return (i18n && i18n[key] !== undefined) ? i18n[key] : fallback;
+  }
+  function sprintf(format, ...args) {
+    let i = 0;
+    return format.replace(/%[sd]/g, () => (args[i++] !== undefined ? args[i - 1] : ''));
+  }
+
   let scanData = {
     posts: [],
     users: [],
@@ -113,18 +123,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const colSpan = isNetwork ? 9 : 8;
     if (isLoading) {
       btnScan.disabled = true;
-      btnScan.textContent = isNetwork ? '全傘下サイトを巡回クロール中...' : 'スキャン中...';
-      postsBody.innerHTML = `<tr><td colspan="${colSpan}" class="wpis-loading-state"><div class="wpis-spinner"></div><div>${isNetwork ? '全傘下サイトの全コンテンツ・ユーザーを横断クロール中...' : 'サイト内を高速クロール中（全投稿・固定ページ・ユーザー）...'}</div></td></tr>`;
-      usersBody.innerHTML = `<tr><td colspan="7" class="wpis-loading-state"><div class="wpis-spinner"></div><div>ユーザーをスキャン中...</div></td></tr>`;
+      btnScan.textContent = isNetwork ? __( 'scan_running_network', '全傘下サイトを巡回クロール中...' ) : __( 'scan_running', 'スキャン中...' );
+      postsBody.innerHTML = `<tr><td colspan="${colSpan}" class="wpis-loading-state"><div class="wpis-spinner"></div><div>${isNetwork ? __( 'scanning_network', '全傘下サイトの全コンテンツ・ユーザーを横断クロール中...' ) : __( 'scanning_content', 'サイト内を高速クロール中（全投稿・固定ページ・ユーザー）...' )}</div></td></tr>`;
+      usersBody.innerHTML = `<tr><td colspan="7" class="wpis-loading-state"><div class="wpis-spinner"></div><div>${__( 'scanning_users', 'ユーザーをスキャン中...' )}</div></td></tr>`;
     } else {
       btnScan.disabled = false;
-      btnScan.textContent = isNetwork ? '全サイト横断スキャン実行' : '再スキャン実行';
+      btnScan.textContent = isNetwork ? __( 'rescan_network', '全サイト横断スキャン実行' ) : __( 'rescan', '再スキャン実行' );
     }
   }
 
   function renderAll() {
     if (isNetwork && metricTotalSites && scanData.summary.totalSites !== undefined) {
-      metricTotalSites.textContent = `${scanData.summary.totalSites} サイト`;
+      metricTotalSites.textContent = sprintf( __( 'sites_count_suffix', '%d サイト' ), scanData.summary.totalSites );
     }
     metricTotalPosts.textContent = scanData.summary.totalPosts;
     metricThreatPosts.textContent = scanData.summary.threatPosts;
@@ -180,25 +190,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     if (filtered.length === 0) {
-      postsBody.innerHTML = `<tr><td colspan="${colSpan}" class="wpis-empty-state">該当するコンテンツはありません（安全です）</td></tr>`;
+      postsBody.innerHTML = `<tr><td colspan="${colSpan}" class="wpis-empty-state">${escapeHtml(__( 'no_threats_found', '該当するコンテンツはありません（安全です）' ))}</td></tr>`;
       return;
     }
 
     postsBody.innerHTML = filtered.map(item => {
-      let severityBadge = '<span class="wpis-badge wpis-badge-success">正常</span>';
+      let severityBadge = `<span class="wpis-badge wpis-badge-success">${escapeHtml(__( 'normal', '正常' ))}</span>`;
       let rowClass = '';
       if (item.severity === 'high') {
-        severityBadge = '<span class="wpis-badge wpis-badge-danger">🚨 危険（即削除推奨）</span>';
+        severityBadge = `<span class="wpis-badge wpis-badge-danger">${escapeHtml(__( 'threat_danger', '🚨 危険（即削除推奨）' ))}</span>`;
         rowClass = 'is-threat-danger';
       } else if (item.severity === 'medium') {
-        severityBadge = '<span class="wpis-badge wpis-badge-warning">⚠️ 警告（要確認）</span>';
+        severityBadge = `<span class="wpis-badge wpis-badge-warning">${escapeHtml(__( 'threat_warning', '⚠️ 警告（要確認）' ))}</span>`;
         rowClass = 'is-threat-warning';
       } else if (item.severity === 'low') {
-        severityBadge = '<span class="wpis-badge wpis-badge-muted">ℹ️ 下書き/ゴミ箱</span>';
+        severityBadge = `<span class="wpis-badge wpis-badge-muted">${escapeHtml(__( 'threat_muted', 'ℹ️ 下書き/ゴミ箱' ))}</span>`;
       }
 
       if (item.is_protected) {
-        severityBadge = '<span class="wpis-badge wpis-badge-muted" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">🔒 システム保護</span>';
+        severityBadge = `<span class="wpis-badge wpis-badge-muted" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">🔒 ${escapeHtml(__( 'protected_notice', 'システム重要ページのため削除保護' ))}</span>`;
       }
 
       const statusMap = {
@@ -314,14 +324,16 @@ document.addEventListener('DOMContentLoaded', function () {
     if (selected.length === 0) return;
 
     if (isPermanent) {
-      const msg = `【慎重確認: 完全削除】\n` +
-                  `選択された ${selected.length} 件のコンテンツをDBから完全に消去します。\n` +
-                  `※ゴミ箱には入らず復元できません。\n` +
-                  `※公開中の正常記事は自動でゴミ箱へ退避され、巻き込み事故を防止します。\n\n` +
-                  `本当に実行してよろしいですか？`;
+      const defaultMsg = `【安全確認: 記事の完全削除】\n` +
+                  `選択された %d 件のコンテンツをデータベースから【完全に消去】します。\n\n` +
+                  `※この操作は元に戻せません。公開中の正規記事は自動的にスキップまたはゴミ箱へ退避されます。\n\n` +
+                  `本当に実行しますか？`;
+      const msg = sprintf( __( 'confirm_delete_posts', defaultMsg ), selected.length );
       if (!confirm(msg)) return;
     } else {
-      if (!confirm(`選択された ${selected.length} 件のコンテンツを「ゴミ箱」へ移動します。\n（後からいつでも復元可能です）\n\n実行しますか？`)) {
+      const defaultTrash = `【確認: ゴミ箱への移動】\n選択された %d 件のコンテンツをゴミ箱へ移動します。\n（後から復元可能です）\n\n実行しますか？`;
+      const msg = sprintf( __( 'confirm_trash_posts', defaultTrash ), selected.length );
+      if (!confirm(msg)) {
         return;
       }
     }
@@ -358,15 +370,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // Render Users Table
   function renderUsers() {
     if (scanData.users.length === 0) {
-      usersBody.innerHTML = `<tr><td colspan="7" class="wpis-empty-state">ユーザーはいません</td></tr>`;
+      usersBody.innerHTML = `<tr><td colspan="7" class="wpis-empty-state">${escapeHtml(__( 'no_users_found', 'ユーザーはいません' ))}</td></tr>`;
       return;
     }
 
     usersBody.innerHTML = scanData.users.map(u => {
-      let badge = '<span class="wpis-badge wpis-badge-success">正常</span>';
+      let badge = `<span class="wpis-badge wpis-badge-success">${escapeHtml(__( 'normal', '正常' ))}</span>`;
       let rowClass = '';
       if (u.is_threat) {
-        badge = '<span class="wpis-badge wpis-badge-danger">🚨 不審（即削除推奨）</span>';
+        badge = `<span class="wpis-badge wpis-badge-danger">${escapeHtml(__( 'user_threat', '🚨 不審（即削除推奨）' ))}</span>`;
         rowClass = 'is-threat-danger';
       }
 
@@ -416,7 +428,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const selected = usersBody.querySelectorAll('.wpis-user-check:checked');
     if (btnDeleteUsers) {
       btnDeleteUsers.disabled = selected.length === 0;
-      btnDeleteUsers.textContent = selected.length > 0 ? `選択した${selected.length}名の不審ユーザーを削除` : '選択した不審ユーザーを削除';
+      btnDeleteUsers.textContent = selected.length > 0
+        ? sprintf( __( 'delete_users_btn', '選択した%d名の不審ユーザーを削除' ), selected.length )
+        : __( 'delete_users_btn_empty', '選択した不審ユーザーを削除' );
     }
   }
 
@@ -435,12 +449,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (selected.length === 0) return;
 
-    const msg = `【安全確認: 不審ユーザーの削除】\n` +
-                `選択された ${selected.length} 名の不審ユーザーを削除します。\n\n` +
+    const defaultUserConfirm = `【安全確認: 不審ユーザーの削除】\n` +
+                `選択された %d 名の不審ユーザーを削除します。\n\n` +
                 `🛡️ 巻き込み防止ガード:\n` +
                 `・不正な下書き・ゴミ箱記事のみが完全消去されます。\n` +
                 `・公開中の正規記事は安全に保護されます。\n\n` +
                 `実行しますか？`;
+    const msg = sprintf( __( 'confirm_delete_users', defaultUserConfirm ), selected.length );
 
     if (!confirm(msg)) return;
 
@@ -473,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Export CSV (with CSV Injection protection)
   btnExportCsv.addEventListener('click', () => {
     if (scanData.posts.length === 0 && scanData.users.length === 0) {
-      alert('エクスポートするスキャンデータがありません。先にスキャンを実行してください。');
+      alert( __( 'no_export_data', 'エクスポートするスキャンデータがありません。先にスキャンを実行してください。' ) );
       return;
     }
 
