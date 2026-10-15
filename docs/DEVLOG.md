@@ -1,5 +1,18 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-15 | GitHub公開リポジトリの配布物・KW専用ホスト化（方式A）
+- 🧠 思考: ノーライセンス公開の方針に伴い、GitHub上の公開リポジトリ（`main` ブランチ）には生ソースコードを展開せず、完成版ZIP（`wp-incident-sweeper.zip`）、検知キーワード正本（`signatures.json`）、およびドキュメント（`README.md` 等）のみをホストする構成へ移行。
+- 🔨 やった:
+  1. 手元のローカルに `develop` ブランチを作成し、全ソースコード（`wp-incident-sweeper/`）、テスト、ビルドスクリプトを完全保全。
+  2. GitHubリモートの不要な `master` ブランチを削除。
+  3. `main` ブランチから生ソースコード・スクリプトを削除し、`wp-incident-sweeper.zip`、`signatures.json`、`README.md` 等の配布ファイルのみに整理して push。
+  4. `README.md` 先頭に直接ダウンロードリンクを新設し、ノーライセンス（No License / All rights reserved）の著作権表示を追加。
+  5. リリース自動反映スクリプト `scripts/publish_release.sh` を作成。
+- ❌ 失敗: なし。
+- ✅ 成功: GitHub上の `main` にはZIP・KW・ドキュメントのみが並び、RAW URL (`signatures.json`) および ZIP 直接ダウンロード URL がともに HTTP 200 で稼働。
+- 🧭 決定: 開発・テストは `develop` ブランチで実施し、公開は `publish_release.sh` で `main` に配布物のみを反映する運用に統一。
+- 🔗 参照: `README.md` / `https://github.com/chromatribe/wp-incident-sweeper`
+
 ## 2026-10-15 | v2.20261015.6 検知KWのGitHub自動同期と一覧画面での検知理由即時可視化
 - 🧠 思考:
   1. 脅威キーワードは日々変化するため、プラグイン本体のコードを変更することなく GitHub (Raw JSON) から最新の検知シグネチャを自動更新できるようにする。
