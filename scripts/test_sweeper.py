@@ -56,7 +56,7 @@ def test_php_bracket_integrity(php_text: str):
 def test_security_controls(php_text: str, js_text: str):
     """セキュリティ防御要件の点検"""
     # 1. Nonce 検証
-    endpoints = ["ajax_run_scan", "ajax_delete_posts", "ajax_delete_users", "ajax_sync_signatures"]
+    endpoints = ["ajax_run_scan", "ajax_delete_posts", "ajax_delete_users", "ajax_sync_signatures", "ajax_save_my_keywords"]
     for ep in endpoints:
         ep_match = re.search(r"function\s+" + ep + r"\s*\(\)\s*\{([^}]+check_ajax_referer[^}]+)", php_text)
         assert ep_match, f"{ep} must perform check_ajax_referer at start"
@@ -165,6 +165,22 @@ def test_signature_engine(php_text: str, js_text: str):
     print("  [PASS] GitHub signature auto-sync & prominent reason badges verified")
 
 
+def test_my_keywords_feature(php_text: str, js_text: str):
+    """マイKW（ユーザー個別検知キーワード）機能の検証"""
+    # PHP側
+    assert "get_my_keywords" in php_text, "PHP must implement get_my_keywords"
+    assert "set_my_keywords" in php_text, "PHP must implement set_my_keywords"
+    assert "ajax_save_my_keywords" in php_text, "PHP must implement ajax_save_my_keywords"
+    assert "wpis_my_keywords" in php_text, "PHP must use wpis_my_keywords user meta key"
+    assert "🎯 マイKW検知" in php_text, "PHP scan must tag matched posts with 🎯 マイKW検知"
+
+    # JS側
+    assert "wpis-btn-my-kw" in js_text, "JS must handle wpis-btn-my-kw"
+    assert "updateMyKeywordsCount" in js_text, "JS must implement updateMyKeywordsCount"
+    assert "wpis_save_my_keywords" in js_text, "JS must call wpis_save_my_keywords"
+    print("  [PASS] My Keywords (マイKW) custom detection engine verified")
+
+
 def test_js_execution():
     """Node.js を用いて admin.js の構文・未定義変数（ReferenceError等）を自動検証"""
     import subprocess
@@ -229,6 +245,7 @@ def main():
     test_multisite_single_separation(php_text, js_text)
     test_safety_guards(php_text)
     test_signature_engine(php_text, js_text)
+    test_my_keywords_feature(php_text, js_text)
     test_js_execution()
 
     print("\nALL TESTS PASSED! Plugin is strictly verified.")

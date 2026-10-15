@@ -3,7 +3,7 @@
 > **Emergency incident response, mass defacement auditing, and safe one-click cleanup plugin for WordPress (Single & Multisite).**  
 > WordPress サイト内の全投稿・固定ページ・ユーザーを一括スキャンし、改ざん痕跡・不正侵入を安全に特定・駆除する緊急セキュリティ監査ツール。
 
-**Version:** `2.20261015.6`  
+**Version:** `2.20261015.7`  
 📥 **[Download Latest Plugin (`wp-incident-sweeper.zip`)](https://github.com/chromatribe/wp-incident-sweeper/raw/main/wp-incident-sweeper.zip)**
 
 ---
@@ -20,27 +20,32 @@
    - Zero-disruption: safely merges with and falls back to built-in keywords if offline.
    - *（最新の脅威KW・不審ドメイン辞書を GitHub からワンクリックで取得・更新）*
 
-3. **Prominent Reason Badges / 検知理由の即時可視化**
-   - Instant visual identification tags (`🚨 Defacement: "hacked by"`, `⚠️ SEO Spam: "casino"`) rendered directly below titles and usernames without horizontal scrolling.
+3. **Custom Target Keywords ("My KW") / マイKW（個別検知キーワード登録）**
+   - Each administrator can define custom target keywords (stored per-user in user meta).
+   - Automatically crawled across titles, contents, and usernames with dedicated purple pill badges (`🎯 マイKW検知: "keyword"`).
+   - *（管理者ごとに自由な独自キーワードを登録・管理可能。専用の紫ピルバッジで即時特定）*
+
+4. **Prominent Reason Badges / 検知理由の即時可視化**
+   - Instant visual identification tags (`🚨 Defacement: "hacked by"`, `⚠️ SEO Spam: "casino"`, `🎯 My KW: "keyword"`) rendered directly below titles and usernames without horizontal scrolling.
    - *（横スクロール不要で、タイトル直下の色分けピルバッジにより検知理由を一目で特定）*
 
-4. **Zero-Memory Ultra-Fast Scanning / 省メモリ・超高速スキャン**
+5. **Zero-Memory Ultra-Fast Scanning / 省メモリ・超高速スキャン**
    - Stream-extracts threat matches directly at MySQL level via optimized SQL queries without loading huge `post_content` into PHP memory.
    - Zero PHP memory crashes (no HTTP 500 / 504 timeouts) even on huge enterprise databases.
    - *（SQL事前抽出によりメモリ消費量 0MB を実現し、大規模サイトでも安定動作）*
 
-5. **Multi-Layered Safeguards / 巻き込み事故防止ガード**
+6. **Multi-Layered Safeguards / 巻き込み事故防止ガード**
    - System-critical page protection (homepage, posts page, privacy policy).
    - Prevents accidental hard-deletion of legitimate published articles (safely fallbacks to trash).
    - Safe user deletion with post reassignment (`wp_delete_user($uid, $reassign)`).
    - Hard lock on current admin account and Master Admin (ID: 1).
    - *（システム重要ページ、公開中記事、初期特権管理者を多重ガードで完全保護）*
 
-6. **Audit Evidence CSV Export / エビデンスCSVエクスポート**
+7. **Audit Evidence CSV Export / エビデンスCSVエクスポート**
    - One-click export of complete scan results in UTF-8 BOM CSV format, protected against CSV Formula Injection.
    - *（監査報告書用CSVダウンロード機能。数式インジェクション対策済み）*
 
-7. **Zero-Footprint Clean Removal / ゼロ・フットプリント**
+8. **Zero-Footprint Clean Removal / ゼロ・フットプリント**
    - No external CDN dependencies, no custom database tables or leftover options. Clean removal on deactivation.
    - *（データベースにゴミを残さず、巡回完了後は停止・削除するだけで完全撤去可能）*
 

@@ -3,7 +3,7 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。単一サイトおよびマルチサイト（サイトネットワーク管理）の両方に完全対応し、コンテキストに応じてUIが自動最適化されます。
- * Version: 2.20261015.6
+ * Version: 2.20261015.7
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -122,6 +122,7 @@ class WP_Incident_Sweeper {
         add_action( 'wp_ajax_wpis_delete_posts', array( $this, 'ajax_delete_posts' ) );
         add_action( 'wp_ajax_wpis_delete_users', array( $this, 'ajax_delete_users' ) );
         add_action( 'wp_ajax_wpis_sync_signatures', array( $this, 'ajax_sync_signatures' ) );
+        add_action( 'wp_ajax_wpis_save_my_keywords', array( $this, 'ajax_save_my_keywords' ) );
     }
 
     const REMOTE_SIGNATURES_URL = 'https://raw.githubusercontent.com/chromatribe/wp-incident-sweeper/main/signatures.json';
@@ -175,7 +176,7 @@ class WP_Incident_Sweeper {
         $response = wp_remote_get( self::REMOTE_SIGNATURES_URL, array(
             'timeout'    => 10,
             'sslverify'  => true,
-            'user-agent' => 'WP-Incident-Sweeper/' . '2.20261015.6',
+            'user-agent' => 'WP-Incident-Sweeper/' . '2.20261015.7',
         ) );
 
         if ( is_wp_error( $response ) ) {
@@ -235,6 +236,65 @@ class WP_Incident_Sweeper {
         ) );
     }
 
+    public function get_my_keywords( $user_id = 0 ) {
+        if ( ! $user_id ) {
+            $user_id = get_current_user_id();
+        }
+        if ( ! $user_id ) {
+            return array();
+        }
+        $raw = get_user_meta( $user_id, 'wpis_my_keywords', true );
+        if ( is_string( $raw ) ) {
+            $lines = preg_split( '/[\r\n,]+/', $raw );
+            return array_values( array_unique( array_filter( array_map( function( $w ) {
+                return mb_strtolower( trim( sanitize_text_field( $w ) ), 'UTF-8' );
+            }, $lines ) ) ) );
+        }
+        return is_array( $raw ) ? array_values( array_unique( array_filter( $raw ) ) ) : array();
+    }
+
+    public function set_my_keywords( $keywords, $user_id = 0 ) {
+        if ( ! $user_id ) {
+            $user_id = get_current_user_id();
+        }
+        if ( ! $user_id ) {
+            return array();
+        }
+        if ( is_string( $keywords ) ) {
+            $lines = preg_split( '/[\r\n,]+/', $keywords );
+            $clean = array_values( array_unique( array_filter( array_map( function( $w ) {
+                return mb_strtolower( trim( sanitize_text_field( $w ) ), 'UTF-8' );
+            }, $lines ) ) ) );
+        } elseif ( is_array( $keywords ) ) {
+            $clean = array_values( array_unique( array_filter( array_map( function( $w ) {
+                return mb_strtolower( trim( sanitize_text_field( $w ) ), 'UTF-8' );
+            }, $keywords ) ) ) );
+        } else {
+            $clean = array();
+        }
+        update_user_meta( $user_id, 'wpis_my_keywords', $clean );
+        return $clean;
+    }
+
+    public function ajax_save_my_keywords() {
+        if ( ! check_ajax_referer( 'wpis_nonce_action', '_wpnonce', false ) ) {
+            wp_send_json_error( array( 'message' => 'セキュリティトークン(Nonce)の検証に失敗しました。' ), 403 );
+        }
+
+        if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_network' ) ) {
+            wp_send_json_error( array( 'message' => '操作権限がありません。' ), 403 );
+        }
+
+        $raw_kw = isset( $_POST['keywords'] ) ? wp_unslash( $_POST['keywords'] ) : '';
+        $clean = $this->set_my_keywords( $raw_kw );
+
+        wp_send_json_success( array(
+            'message'  => 'マイKW（独自検知キーワード）を正常に保存しました！',
+            'keywords' => $clean,
+            'count'    => count( $clean ),
+        ) );
+    }
+
     public function register_admin_menu() {
         add_menu_page(
             'インシデント巡回スイーパー',
@@ -268,14 +328,14 @@ class WP_Incident_Sweeper {
             'wpis-admin-css',
             plugins_url( 'assets/css/admin.css', __FILE__ ),
             array(),
-            '2.20261015.6'
+            '2.20261015.7'
         );
 
         wp_enqueue_script(
             'wpis-admin-js',
             plugins_url( 'assets/js/admin.js', __FILE__ ),
             array(),
-            '2.20261015.6',
+            '2.20261015.7',
             true
         );
 
@@ -287,6 +347,7 @@ class WP_Incident_Sweeper {
             'isMultisite' => is_multisite(),
             'isNetwork'   => $is_network,
             'nonce'       => wp_create_nonce( 'wpis_nonce_action' ),
+            'myKeywords'  => $this->get_my_keywords(),
         ) );
     }
 
@@ -361,6 +422,8 @@ class WP_Incident_Sweeper {
         $start_july = strtotime( '2026-07-17 00:00:00' );
         $end_july   = strtotime( '2026-07-25 23:59:59' );
 
+        $my_keywords = $this->get_my_keywords();
+
         foreach ( $all_users as $u ) {
             $is_threat = false;
             $reasons = array();
@@ -383,6 +446,17 @@ class WP_Incident_Sweeper {
             if ( $reg_time >= $start_july && $reg_time <= $end_july ) {
                 $is_threat = true;
                 $reasons[] = '7月脆弱性インシデント期間（7/17〜7/25）の登録ユーザー';
+            }
+
+            if ( ! empty( $my_keywords ) ) {
+                $u_text = mb_strtolower( (string) $u->user_login . ' ' . (string) $u->display_name . ' ' . (string) $u->user_email, 'UTF-8' );
+                foreach ( $my_keywords as $mkw ) {
+                    if ( mb_strpos( $u_text, $mkw ) !== false ) {
+                        $is_threat = true;
+                        $reasons[] = '🎯 マイKW検知: "' . esc_html( $mkw ) . '"';
+                        break;
+                    }
+                }
             }
 
             if ( $is_threat ) {
@@ -479,7 +553,34 @@ class WP_Incident_Sweeper {
                 }
             }
 
-            // 3. メインクエリ（巨大な post_content を除外してメモリ枯渇・500/504エラーを完全防止）
+            // 3. 本文のマイKW（独自指定キーワード）をSQLで超高速抽出
+            $my_matched_words = array();
+            if ( ! empty( $my_keywords ) ) {
+                $my_likes = array();
+                foreach ( $my_keywords as $kw ) {
+                    $my_likes[] = "p.post_content LIKE " . $wpdb->prepare( '%s', '%' . $wpdb->esc_like( $kw ) . '%' );
+                }
+                $threat_my_ids = array_map( 'intval', (array) $wpdb->get_col(
+                    "SELECT p.ID FROM {$wpdb->posts} p WHERE p.post_type NOT IN ({$in_clause}) AND (" . implode( ' OR ', $my_likes ) . ")"
+                ) );
+
+                if ( ! empty( $threat_my_ids ) ) {
+                    $ids_in = implode( ',', $threat_my_ids );
+                    $threat_rows = $wpdb->get_results( "SELECT ID, post_content FROM {$wpdb->posts} WHERE ID IN ({$ids_in})" );
+                    foreach ( $threat_rows as $tr ) {
+                        $c_lower = mb_strtolower( (string) $tr->post_content, 'UTF-8' );
+                        $m_list = array();
+                        foreach ( $my_keywords as $kw ) {
+                            if ( mb_strpos( $c_lower, $kw ) !== false ) {
+                                $m_list[] = $kw;
+                            }
+                        }
+                        $my_matched_words[ (int) $tr->ID ] = $m_list;
+                    }
+                }
+            }
+
+            // 4. メインクエリ（巨大な post_content を除外してメモリ枯渇・500/504エラーを完全防止）
             $sql = "
                 SELECT p.ID, p.post_title, p.post_name, p.post_type, p.post_status, p.post_author, p.post_modified, u.display_name AS author_name
                 FROM {$wpdb->posts} p
@@ -550,6 +651,28 @@ class WP_Incident_Sweeper {
                         }
                     }
 
+                    // 🎯 マイKW検知（本文）
+                    if ( isset( $my_matched_words[ $post_id ] ) && ! empty( $my_matched_words[ $post_id ] ) ) {
+                        if ( 'clean' === $severity || 'low' === $severity ) {
+                            $severity = 'high';
+                        }
+                        $words_str = implode( '", "', array_slice( $my_matched_words[ $post_id ], 0, 3 ) );
+                        $reasons[] = '🎯 マイKW検知(本文): "' . esc_html( $words_str ) . '"';
+                    }
+
+                    // 🎯 マイKW検知（タイトル・スラッグ）
+                    if ( ! empty( $my_keywords ) ) {
+                        foreach ( $my_keywords as $mkw ) {
+                            if ( mb_strpos( $title_slug_text, $mkw ) !== false ) {
+                                if ( 'clean' === $severity || 'low' === $severity ) {
+                                    $severity = 'high';
+                                }
+                                $reasons[] = '🎯 マイKW検知(タイトル): "' . esc_html( $mkw ) . '"';
+                                break;
+                            }
+                        }
+                    }
+
                     if ( $severity === 'clean' && in_array( $status, array( 'draft', 'trash', 'pending', 'private' ), true ) ) {
                         $severity = 'low';
                         $reasons[] = 'ℹ️ 非公開/下書き/ゴミ箱';
@@ -591,10 +714,12 @@ class WP_Incident_Sweeper {
 
         $sig_info = $this->get_signatures();
         wp_send_json_success( array(
-            'posts'      => $posts_data,
-            'users'      => $users_data,
-            'sites'      => $sites_to_scan,
-            'signatures' => array(
+            'posts'             => $posts_data,
+            'users'             => $users_data,
+            'sites'             => $sites_to_scan,
+            'my_keywords'       => $my_keywords,
+            'my_keywords_count' => count( $my_keywords ),
+            'signatures'        => array(
                 'version'    => $sig_info['version'],
                 'updated_at' => $sig_info['updated_at'],
                 'high_count' => count( $sig_info['threat_keywords_high'] ),
@@ -851,11 +976,17 @@ class WP_Incident_Sweeper {
                             サイト内の全コンテンツ（公開・下書き・ゴミ箱）およびユーザーを一括クロールし、不正な痕跡を特定・安全に駆除します。
                         <?php endif; ?>
                     </p>
-                    <?php $sig = $this->get_signatures(); ?>
+                    <?php 
+                    $sig = $this->get_signatures(); 
+                    $my_kw = $this->get_my_keywords();
+                    ?>
                     <div style="margin-top:8px;font-size:12px;color:#64748b;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                         <span style="background:#f1f5f9;border:1px solid #e2e8f0;padding:2px 8px;border-radius:4px;">
                             🛡️ 検知シグネチャ: <code id="wpis-sig-version" style="font-weight:bold;color:#0f172a;"><?php echo esc_html( $sig['version'] ); ?></code>
                             （危険: <strong id="wpis-sig-high" style="color:#dc2626;"><?php echo count( $sig['threat_keywords_high'] ); ?></strong>件 / 警告: <strong id="wpis-sig-med" style="color:#d97706;"><?php echo count( $sig['threat_keywords_medium'] ); ?></strong>件）
+                        </span>
+                        <span style="background:#faf5ff;border:1px solid #e9d5ff;padding:2px 8px;border-radius:4px;color:#6b21a8;">
+                            🎯 マイKW: <strong id="wpis-badge-my-kw"><?php echo count( $my_kw ); ?></strong>件
                         </span>
                         <span style="font-size:11px;color:#94a3b8;">最終同期: <span id="wpis-sig-date"><?php echo esc_html( $sig['updated_at'] ); ?></span></span>
                     </div>
@@ -867,6 +998,10 @@ class WP_Incident_Sweeper {
                     <?php endif; ?>
                 </div>
                 <div class="wpis-actions">
+                    <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-my-kw" title="あなたが個別に検知したいキーワードを設定・管理します">
+                        <span class="dashicons dashicons-admin-generic" style="font-size:16px;width:16px;height:16px;"></span>
+                        マイKW設定 (<span id="wpis-my-kw-btn-count"><?php echo count( $my_kw ); ?></span>)
+                    </button>
                     <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-sync-kw" title="GitHubから最新の検知キーワード定義を取得・更新します">
                         <span class="dashicons dashicons-cloud" style="font-size:16px;width:16px;height:16px;"></span>
                         最新KW更新 (GitHub)
@@ -1048,6 +1183,33 @@ class WP_Incident_Sweeper {
                         <li><strong>ガード4（公開記事の所有権安全移譲）：</strong> 不審ユーザー削除時、下書き等の不正記事のみ消去され、公開中記事は現在管理者に引き継ぎ。</li>
                         <li><strong>ガード5（自身・初期管理者の保護）：</strong> ログイン中管理者およびID: 1 のアカウントは削除不可。</li>
                     </ul>
+                </div>
+            </div>
+
+            <!-- My KW Modal Dialog -->
+            <div id="wpis-my-kw-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.6);z-index:99999;align-items:center;justify-content:center;">
+                <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:540px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1),0 10px 10px -5px rgba(0,0,0,0.04);position:relative;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
+                        <h3 style="margin:0;font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;color:#0f172a;">
+                            <span>🎯</span> マイKW設定（個別検知キーワード）
+                        </h3>
+                        <button type="button" id="wpis-btn-close-my-kw" style="background:none;border:none;font-size:24px;color:#94a3b8;cursor:pointer;line-height:1;">&times;</button>
+                    </div>
+                    <p style="font-size:13px;color:#475569;margin-bottom:12px;line-height:1.5;">
+                        あなたが個別に監視・検知したいキーワードを登録できます。<br>
+                        登録したキーワードは全記事のタイトル・本文・ユーザー名から自動検知され、一覧上に <code style="color:#6b21a8;background:#f3e8ff;padding:1px 5px;border-radius:3px;">🎯 マイKW検知</code> バッジで分かりやすく表示されます。
+                    </p>
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;">
+                            検知キーワード（1行に1つ、またはカンマ区切りで入力）:
+                        </label>
+                        <textarea id="wpis-my-kw-input" rows="6" style="width:100%;font-family:monospace;font-size:13px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;" placeholder="例:&#10;自社固有のNGワード&#10;不審な特定ドメイン&#10;情報漏洩の兆候文字列"><?php echo esc_textarea( implode( "\n", $my_kw ) ); ?></textarea>
+                        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">※ 大文字・小文字は区別されず自動的に小文字で照合されます。</div>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;gap:10px;">
+                        <button type="button" class="wpis-btn wpis-btn-secondary" id="wpis-btn-cancel-my-kw">キャンセル</button>
+                        <button type="button" class="wpis-btn wpis-btn-primary" id="wpis-btn-save-my-kw">保存して再スキャン</button>
+                    </div>
                 </div>
             </div>
         </div>

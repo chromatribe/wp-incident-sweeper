@@ -24,6 +24,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const btnScan = document.getElementById('wpis-btn-scan');
   const btnExportCsv = document.getElementById('wpis-btn-csv');
   const btnSyncKw = document.getElementById('wpis-btn-sync-kw');
+  const btnMyKw = document.getElementById('wpis-btn-my-kw');
+  const modalMyKw = document.getElementById('wpis-my-kw-modal');
+  const btnCloseMyKw = document.getElementById('wpis-btn-close-my-kw');
+  const btnCancelMyKw = document.getElementById('wpis-btn-cancel-my-kw');
+  const btnSaveMyKw = document.getElementById('wpis-btn-save-my-kw');
+  const inputMyKw = document.getElementById('wpis-my-kw-input');
   const tabBtns = document.querySelectorAll('.wpis-tab-btn');
   const panels = document.querySelectorAll('.wpis-panel');
 
@@ -137,6 +143,10 @@ document.addEventListener('DOMContentLoaded', function () {
       );
     }
 
+    if (scanData.my_keywords_count !== undefined) {
+      updateMyKeywordsCount(scanData.my_keywords_count);
+    }
+
     // ネットワーク管理画面時のみサイト別フィルターを動的生成
     if (isNetwork && postsSiteFilter && scanData.sites && scanData.sites.length > 0) {
       const currentVal = postsSiteFilter.value;
@@ -204,7 +214,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const reasonsBadgesHtml = item.reasons.length > 0
         ? item.reasons.map(r => {
             let bg = '#fee2e2', color = '#991b1b', border = '#fecaca'; // danger
-            if (r.startsWith('⚠️')) {
+            if (r.startsWith('🎯')) {
+              bg = '#faf5ff'; color = '#6b21a8'; border = '#e9d5ff'; // My KW (purple)
+            } else if (r.startsWith('⚠️')) {
               bg = '#fef3c7'; color = '#92400e'; border = '#fde68a'; // warning
             } else if (r.startsWith('🔒')) {
               bg = '#e0f2fe'; color = '#0369a1'; border = '#bae6fd'; // info
@@ -362,7 +374,13 @@ document.addEventListener('DOMContentLoaded', function () {
       const isDisabled = (safeId === 1) ? 'disabled title="初期マスター管理者のため保護されています"' : '';
 
       const userReasonsHtml = u.threat_reasons.length > 0
-        ? u.threat_reasons.map(r => `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;line-height:1.4;">${escapeHtml(r)}</span>`).join('')
+        ? u.threat_reasons.map(r => {
+            let bg = '#fee2e2', color = '#991b1b', border = '#fecaca';
+            if (r.startsWith('🎯')) {
+              bg = '#faf5ff'; color = '#6b21a8'; border = '#e9d5ff';
+            }
+            return `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:${bg};color:${color};border:1px solid ${border};line-height:1.4;">${escapeHtml(r)}</span>`;
+          }).join('')
         : '<span style="color:#94a3b8;font-size:12px;">-</span>';
 
       return `
@@ -548,6 +566,72 @@ document.addEventListener('DOMContentLoaded', function () {
     if (elHigh && highCount !== undefined) elHigh.textContent = highCount;
     if (elMed && medCount !== undefined) elMed.textContent = medCount;
     if (elDate && updatedAt) elDate.textContent = updatedAt;
+  }
+
+  // My KW Modal & Save Logic
+  if (btnMyKw && modalMyKw) {
+    btnMyKw.addEventListener('click', () => {
+      modalMyKw.style.display = 'flex';
+      if (inputMyKw) inputMyKw.focus();
+    });
+
+    if (btnCloseMyKw) {
+      btnCloseMyKw.addEventListener('click', () => {
+        modalMyKw.style.display = 'none';
+      });
+    }
+
+    if (btnCancelMyKw) {
+      btnCancelMyKw.addEventListener('click', () => {
+        modalMyKw.style.display = 'none';
+      });
+    }
+
+    modalMyKw.addEventListener('click', (e) => {
+      if (e.target === modalMyKw) {
+        modalMyKw.style.display = 'none';
+      }
+    });
+
+    if (btnSaveMyKw) {
+      btnSaveMyKw.addEventListener('click', async () => {
+        const originalText = btnSaveMyKw.innerHTML;
+        btnSaveMyKw.disabled = true;
+        btnSaveMyKw.innerHTML = '<span class="wpis-spinner" style="display:inline-block;width:14px;height:14px;margin-right:6px;border:2px solid #cbd5e1;border-top-color:#0284c7;border-radius:50%;animation:wpis-spin 0.8s linear infinite;"></span> 保存中...';
+
+        try {
+          const formData = new FormData();
+          formData.append('action', 'wpis_save_my_keywords');
+          formData.append('_wpnonce', nonce);
+          formData.append('keywords', inputMyKw ? inputMyKw.value : '');
+
+          const json = await safeFetchJson(formData);
+          if (!json.success) {
+            alert('マイKWの保存に失敗しました:\n' + (json.data?.message || '不明なエラー'));
+            return;
+          }
+
+          const count = json.data?.count || 0;
+          updateMyKeywordsCount(count);
+          modalMyKw.style.display = 'none';
+          alert(`✅ ${json.data?.message || 'マイKWを保存しました！'}（登録数: ${count}件）\n最新のキーワード設定で再スキャンを実行します。`);
+          runScan();
+        } catch (err) {
+          console.error(err);
+          alert('通信エラーが発生しました:\n' + (err.message || err));
+        } finally {
+          btnSaveMyKw.disabled = false;
+          btnSaveMyKw.innerHTML = originalText;
+        }
+      });
+    }
+  }
+
+  function updateMyKeywordsCount(count) {
+    const badge = document.getElementById('wpis-badge-my-kw');
+    const btnCount = document.getElementById('wpis-my-kw-btn-count');
+    if (badge) badge.textContent = count;
+    if (btnCount) btnCount.textContent = count;
   }
 
   btnScan.addEventListener('click', runScan);
