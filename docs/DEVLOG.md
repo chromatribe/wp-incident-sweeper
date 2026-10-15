@@ -1,5 +1,16 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-15 | v2.20261015.5 フロント描画バグ（safeBlogId is not defined）の即時解消
+- 🧠 思考: サーバー側スキャン（SQL抽出）は無事成功したが、ブラウザ側テーブル描画ループ内で safeBlogId の宣言が抜けていたため ReferenceError が発生。
+- 🔨 やった:
+  1. admin.js の renderPosts() 内に const safeBlogId = parseInt(item.blog_id || 1, 10); を復旧。
+  2. test_sweeper.py に Node.js モックによる実際の DOM レンダリング自動テストを追加。
+  3. 全7ファイルを v2.20261015.5 に更新し、最新 ZIP をビルド。
+- ❌ 失敗: リファクタリング時のローカル変数宣言漏れ（Node.js モックテスト導入で再発防止）。
+- ✅ 成功: 単サイト・マルチサイトの両モック描画テストが exit code 0 で完全通過。
+- 🧭 決定: JS側の描画処理は必ず Node.js のモック実行テストをパイプラインに通す。
+- 🔗 参照: docs/CHANGELOG.md / spec/SPEC.md
+
 ## 2026-10-15 | v2.20261015.4 大規模サイト通信エラー（メモリ枯渇）の根本解決とSQL抽出最適化
 - 🧠 思考: school.snapsnap.jp で「スキャン中に通信エラーが発生しました。」が発生。原因は全記事の post_content を PHP メモリに全件ロードしたことによるメモリ上限超過（Fatal error: Allowed memory size...）またはタイムアウト。また、エラー時に詳細理由が把握できるようクライアント側エラー表示を強化する。
 - 🔨 やった:

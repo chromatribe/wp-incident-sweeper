@@ -138,6 +138,59 @@ def test_safety_guards(php_text: str):
     print("  [PASS] All 5 safety guards and anti-cascade defenses verified")
 
 
+def test_js_execution():
+    """Node.js を用いて admin.js の構文・未定義変数（ReferenceError等）を自動検証"""
+    import subprocess
+    cmd = [
+        "node", "-e",
+        """
+        const fs = require('fs');
+        let code = fs.readFileSync('""" + str(JS_FILE) + """', 'utf8');
+
+        function runMock(isNetwork) {
+          const mockDom = {
+            addEventListener: (evt, cb) => { if (evt === 'DOMContentLoaded') cb(); },
+            querySelector: () => ({ dataset: { isNetwork: isNetwork ? '1' : '0' } }),
+            getElementById: (id) => ({
+              id,
+              addEventListener: () => {},
+              querySelectorAll: () => [],
+              innerHTML: '',
+              textContent: '',
+              value: 'all'
+            }),
+            querySelectorAll: () => []
+          };
+          global.document = mockDom;
+          global.window = global;
+          global.wpisConfig = { nonce: 'x', ajaxUrl: 'x', adminUrl: 'x', isNetwork, isMultisite: isNetwork };
+          global.FormData = class { append() {} };
+          global.fetch = async () => ({
+            text: async () => JSON.stringify({
+              success: true,
+              data: {
+                posts: [
+                  { id: 10, blog_id: 1, blog_name: 'Subsite 1', title: 'Test 1', slug: 'test1', post_type: 'post', status: 'publish', author_id: 1, author_name: 'Admin', modified_date: '2026-10-15', severity: 'clean', is_protected: false, reasons: [] }
+                ],
+                users: [{ id: 1, login: 'admin', name: 'Admin', email: 'a@b.com', roles: ['administrator'], registered: '2026-10-15', is_threat: false, threat_reasons: [] }],
+                sites: [{ id: 1, name: 'Site 1', url: 'http://localhost' }],
+                summary: { totalSites: 1, totalPosts: 1, threatPosts: 0, totalUsers: 1, threatUsers: 0 }
+              }
+            })
+          });
+          eval(code);
+        }
+
+        runMock(false);
+        runMock(true);
+        console.log('JS mock execution completed');
+        """
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    assert res.returncode == 0, f"JS execution failed: {res.stderr}"
+    print("  [PASS] JavaScript runtime execution (Single & Multisite mock rendering)")
+
+
 def main():
     print("Running WP Incident Sweeper Test Suite...")
     php_text = PHP_FILE.read_text(encoding="utf-8")
@@ -147,6 +200,7 @@ def main():
     test_security_controls(php_text, js_text)
     test_multisite_single_separation(php_text, js_text)
     test_safety_guards(php_text)
+    test_js_execution()
 
     print("\nALL TESTS PASSED! Plugin is strictly verified.")
     return 0

@@ -195,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
         : '<span style="color:#94a3b8;">-</span>';
 
       const safeId = parseInt(item.id, 10);
+      const safeBlogId = parseInt(item.blog_id || 1, 10);
       const rawEditUrl = item.edit_url || `${adminUrl}post.php?post=${safeId}&action=edit`;
       const safeEditUrl = (/^https?:\/\//i.test(rawEditUrl) || rawEditUrl.startsWith('/'))
         ? escapeHtml(rawEditUrl)
