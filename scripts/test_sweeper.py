@@ -358,6 +358,31 @@ def test_zero_unicode_emojis_in_plugin(php_text, js_text):
     print("  [PASS] Zero Unicode emojis strictly verified across PHP and JavaScript sources")
 
 
+def test_sticky_header_and_spacious_table_layout(php_text, js_text):
+    """テーブルの見出し追従（Sticky Header）および検知理由列の100%幅・折返し防御を検証"""
+    css_file = ROOT / "wp-incident-sweeper" / "assets" / "css" / "admin.css"
+    css_text = css_file.read_text(encoding="utf-8")
+
+    # 1. 見出し列・行の追従 (Sticky Header)
+    assert "position: sticky;" in css_text, "admin.css must use position: sticky for table header"
+    assert "top: 0;" in css_text, "admin.css must fix thead th to top: 0"
+    assert "overflow: auto;" in css_text, "table-wrap must have overflow: auto scroll container"
+
+    # 2. 画面幅100%化
+    assert "max-width: 100%;" in css_text, ".wpis-app must use max-width: 100% to fill admin area"
+
+    # 3. 検知理由ピルタグの折り返し防止 (white-space: nowrap)
+    assert ".wpis-reason-pill" in css_text, "admin.css must define .wpis-reason-pill"
+    assert "white-space: nowrap;" in css_text, ".wpis-reason-pill must enforce white-space: nowrap"
+
+    # 4. PHP側での最小幅確保 (min-width)
+    assert 'th style="min-width:240px;">検知理由' in php_text, "PHP posts & users tables must allocate min-width to reason column"
+
+    # 5. JS側でのクラス適用
+    assert "wpis-reason-pill" in js_text, "JS must apply wpis-reason-pill class to reason pills"
+    print("  [PASS] Sticky table headers (見出し追従) & 100% spacious layout verified")
+
+
 def main():
     print("Running WP Incident Sweeper Test Suite...")
     php_text = PHP_FILE.read_text(encoding="utf-8")
@@ -375,6 +400,7 @@ def main():
     test_lucide_icons(php_text)
     test_emoji_broken_image_defense(php_text)
     test_zero_unicode_emojis_in_plugin(php_text, js_text)
+    test_sticky_header_and_spacious_table_layout(php_text, js_text)
 
     print("\nALL TESTS PASSED! Plugin is strictly verified.")
     return 0

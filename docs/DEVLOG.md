@@ -1,5 +1,22 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-15 | v2.20261015.13 見出し追従（Sticky Header）& 検知理由列の100%幅・折返し防御
+- 🧠 思考:
+  1. テーブル内の検知理由ピルバッジ（「非公開/下書き/ゴミ箱」等）が極端に狭い列幅によって文字単位で縦に折れ曲がり（「非公/開/下/書き/...」）、視認性を大きく損ねていた。
+  2. また、画面スクロール時にテーブル見出し（`<th>`）が流れて見えなくなるため、縦に並んだデータがどの列（作成者か、更新日か、ステータスか）に該当するか把握しづらかった。
+  3. ダッシュボード全体の固定幅（1300px）を解除し、テーブルを独立したスクロールコンテナ化して `thead th` を `position: sticky; top: 0;` で固定追従させることで、何百件のコンテンツをスクロールしても常に列見出しを保持し、ピルバッジには `white-space: nowrap` と十分なカラム幅（`min-width: 240px`）を与えることで根本解決する。
+- 🔨 やった:
+  1. `admin.css`: `.wpis-app` の `max-width: 1300px` を `max-width: 100%; margin-right: 20px;` に変更し、WordPress管理画面の横幅をフル活用。
+  2. `admin.css`: `.wpis-table-wrap` を `overflow: auto; max-height: calc(100vh - 250px); min-height: 420px;` に設定。`.wpis-table thead th` に `position: sticky; top: 0; z-index: 20; background: #f8fafc; border-bottom: 2px solid var(--border); box-shadow: inset 0 -1px 0 var(--border);` を適用し、見出し行を完全に固定追従化。
+  3. `admin.css` & `admin.js`: `.wpis-reason-pill` クラスを新設し、`white-space: nowrap; flex-shrink: 0;` を適用。理由ピルバッジ内のテキスト縦割れを完全防止。
+  4. `wp-incident-sweeper.php`: 投稿テーブルおよびユーザーテーブルの「検知理由」ヘッダーに `style="min-width:240px;"` を明示確保。
+  5. `scripts/test_sweeper.py`: `test_sticky_header_and_spacious_table_layout` を追加（全18テストPASS）。
+  6. 全7ファイルを `2.20261015.13` に同期。
+- ❌ 失敗: なし。
+- ✅ 成功: `check_version_sync.py` PASS、`test_sweeper.py` 全18テスト完全通過。
+- 🧭 決定: 管理画面テーブルはコンテナ型Sticky Header（`max-height: calc(100vh - 250px)` + `position: sticky`）を標準設計とし、理由タグは `.wpis-reason-pill` で折返しを防止する。
+- 🔗 参照: `PROJECT.md` / `spec/SPEC.md` / `wp-incident-sweeper/assets/css/admin.css` / `wp-incident-sweeper/assets/js/admin.js`
+
 ## 2026-10-15 | v2.20261015.12 全ソースコードからの絵文字完全撤廃（Zero-Emoji Architecture）
 - 🧠 思考:
   1. テーブル内の各行やバッジ（`🔒 システム重要ページ`, `ℹ️ 下書き/ゴミ箱`, `🎯 マイKW検知`, `🚨 不審` 等）にUnicode絵文字が残っていたため、WordPressコアの絵文字画像変換スクリプト（`wp-emoji-release.min.js`）が `s.w.org` から画像を取得しようとして失敗し、環境によって壊れた画像 `[x]` アイコンが表示されていた。

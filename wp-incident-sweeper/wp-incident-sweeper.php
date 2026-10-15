@@ -3,7 +3,7 @@
  * Plugin Name: WP Incident Sweeper (インシデント一括巡回・駆除スイーパー)
  * Plugin URI: https://chromatri.be
  * Description: サイト内の全投稿・固定ページ・全カスタム投稿タイプ（公開・下書き・ゴミ箱・非公開含む）およびユーザーを瞬時に一括スキャン。単一サイトおよびマルチサイト（サイトネットワーク管理）の両方に完全対応し、コンテキストに応じてUIが自動最適化されます。
- * Version: 2.20261015.12
+ * Version: 2.20261015.13
  * Author: CHROMATRIBE
  * Author URI: https://chromatri.be
  * License: GPL-2.0+
@@ -1280,12 +1280,12 @@ class WP_Incident_Sweeper {
                                 <th style="width:36px;text-align:center;"><input type="checkbox" id="wpis-posts-check-all"></th>
                                 <th style="width:130px;">判定</th>
                                 <?php if ( $is_network ) : ?><th style="width:140px;">対象サイト</th><?php endif; ?>
-                                <th>タイトル</th>
+                                <th style="min-width:240px;">タイトル</th>
                                 <th style="width:90px;">タイプ</th>
                                 <th style="width:80px;">状態</th>
                                 <th style="width:120px;">作成者</th>
                                 <th style="width:140px;">最終更新日時</th>
-                                <th>検知理由</th>
+                                <th style="min-width:240px;">検知理由</th>
                             </tr>
                         </thead>
                         <tbody id="wpis-posts-tbody">
@@ -1324,11 +1324,11 @@ class WP_Incident_Sweeper {
                             <tr>
                                 <th style="width:36px;text-align:center;"><input type="checkbox" id="wpis-users-check-all"></th>
                                 <th style="width:130px;">判定</th>
-                                <th>ユーザー名</th>
-                                <th>メールアドレス</th>
+                                <th style="min-width:180px;">ユーザー名</th>
+                                <th style="min-width:200px;">メールアドレス</th>
                                 <th style="width:140px;">権限グループ</th>
                                 <th style="width:160px;">登録日時 (JST)</th>
-                                <th>検知理由</th>
+                                <th style="min-width:240px;">検知理由</th>
                             </tr>
                         </thead>
                         <tbody id="wpis-users-tbody">

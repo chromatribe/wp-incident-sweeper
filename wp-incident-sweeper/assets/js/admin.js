@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (r.includes('下書き') || r.includes('ゴミ箱') || r.includes('非公開')) {
               bg = '#f1f5f9'; color = '#475569'; border = '#e2e8f0'; icon = svgInfo; // muted
             }
-            return `<span style="display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:${bg};color:${color};border:1px solid ${border};line-height:1.4;">${icon}<span>${escapeHtml(r)}</span></span>`;
+            return `<span class="wpis-reason-pill" style="background:${bg};color:${color};border:1px solid ${border};">${icon}<span>${escapeHtml(r)}</span></span>`;
           }).join('')
         : '<span style="color:#94a3b8;font-size:12px;">-</span>';
 
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <td>${statusBadge}</td>
           <td><span class="${item.author_is_threat ? 'wpis-badge wpis-badge-danger' : ''}">${escapeHtml(item.author_name)}</span></td>
           <td style="white-space:nowrap;font-size:12px;">${escapeHtml(item.modified_date)}</td>
-          <td>${reasonsBadgesHtml}</td>
+          <td style="min-width:240px;"><div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">${reasonsBadgesHtml}</div></td>
         </tr>
       `;
     }).join('');
@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (r.includes('特権管理者') || r.includes('管理者')) {
               icon = svgLock;
             }
-            return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;background:${bg};color:${color};border:1px solid ${border};line-height:1.4;">${icon}${escapeHtml(r)}</span>`;
+            return `<span class="wpis-reason-pill" style="background:${bg};color:${color};border:1px solid ${border};">${icon}<span>${escapeHtml(r)}</span></span>`;
           }).join('')
         : '<span style="color:#94a3b8;font-size:12px;">-</span>';
 
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <td>${escapeHtml(u.email)}</td>
           <td><span class="wpis-badge wpis-badge-muted">${escapeHtml(u.roles.join(', '))}</span></td>
           <td>${escapeHtml(u.registered)}</td>
-          <td>${userReasonsHtml}</td>
+          <td style="min-width:240px;"><div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">${userReasonsHtml}</div></td>
         </tr>
       `;
     }).join('');

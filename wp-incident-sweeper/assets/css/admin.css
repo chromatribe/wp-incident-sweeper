@@ -33,7 +33,8 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: var(--text-main);
   margin-top: 15px;
-  max-width: 1300px;
+  max-width: 100%;
+  margin-right: 20px;
 }
 
 /* Header */
@@ -259,23 +260,32 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 0 0 var(--radius) var(--radius);
-  overflow-x: auto;
+  overflow: auto;
+  max-height: calc(100vh - 250px);
+  min-height: 420px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  position: relative;
 }
 
 .wpis-table {
   width: 100%;
-  border-collapse: collapse;
+  min-width: 1100px;
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: left;
   font-size: 13px;
 }
 
-.wpis-table th {
+.wpis-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   background: #f8fafc;
   color: var(--text-muted);
   font-weight: 600;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  box-shadow: inset 0 -1px 0 var(--border);
   white-space: nowrap;
 }
 
@@ -283,6 +293,20 @@
   padding: 12px 14px;
   border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
+}
+
+.wpis-reason-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 2px 4px 2px 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .wpis-table tr:hover td {
