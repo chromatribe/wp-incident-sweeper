@@ -1,5 +1,20 @@
 # DEVLOG — WP Incident Sweeper
 
+## 2026-10-19 | v2.20261015.13 版番号の不整合修正・ヘッダーへの版番号表示
+- 🧠 思考:
+  1. photobase.me で「スキャン中に通信エラーが発生しました。」が出続けた。アラートに HTTP ステータスが付いていなかったため、更新前の古い `admin.js` が動いている可能性を疑った。
+  2. 原因は版番号の不整合。ヘッダーの `Version:` は `2.20261015.13` だったが、`WP_Incident_Sweeper::VERSION`（アセットの `?ver=` に使用）は `2.20261015.11` のままだった。そのためブラウザが古い JS/CSS をキャッシュから読み続けていた。
+- 🔨 やった:
+  1. `wp-incident-sweeper.php`: `VERSION` 定数を `2.20261015.13` に更新。
+  2. `wp-incident-sweeper.php`: `User-Agent` のハードコードされた版番号を `self::VERSION` 参照に変更。
+  3. `wp-incident-sweeper.php`: インシデント巡回スイーパーのヘッダー見出し横に `v{VERSION}` を小さく表示。
+  4. `languages/*.po`, `languages/wp-incident-sweeper.pot`: `Project-Id-Version` を `2.20261015.13` に更新。
+  5. `wp-incident-sweeper.zip` を再ビルド（`build_zip.sh`）。
+- ❌ 失敗: なし。
+- ✅ 成功: `check_version_sync.py` PASS、`test_sweeper.py` 全テスト PASS、ZIP 内の版番号を確認。
+- 🧭 決定: 版番号は `VERSION` 定数を唯一の正とし、ハードコードを置かない。アセットのキャッシュ対策として、リリースごとに必ず定数を更新する。
+- 🔗 参照: `wp-incident-sweeper/wp-incident-sweeper.php` / `scripts/check_version_sync.py`
+
 ## 2026-10-15 | v2.20261015.13 見出し追従（Sticky Header）& 検知理由列の100%幅・折返し防御
 - 🧠 思考:
   1. テーブル内の検知理由ピルバッジ（「非公開/下書き/ゴミ箱」等）が極端に狭い列幅によって文字単位で縦に折れ曲がり（「非公/開/下/書き/...」）、視認性を大きく損ねていた。
